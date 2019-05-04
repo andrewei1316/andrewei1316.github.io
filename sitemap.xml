@@ -2,6 +2,20 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://blog.andrewei.info/2019/05/04/java-lambda/</loc>
+    
+    <lastmod>2019-05-04T13:03:38.145Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.andrewei.info/404/index.html</loc>
+    
+    <lastmod>2019-05-04T04:56:19.461Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.andrewei.info/tags/index.html</loc>
     
     <lastmod>2018-04-09T01:16:07.387Z</lastmod>
@@ -135,13 +149,6 @@
   </url>
   
   <url>
-    <loc>https://blog.andrewei.info/2016/06/07/cplusplus-virtual-function/</loc>
-    
-    <lastmod>2018-04-09T01:16:07.245Z</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>https://blog.andrewei.info/2015/12/07/codeforces-round-334-div-2/</loc>
     
     <lastmod>2018-04-09T01:16:07.245Z</lastmod>
@@ -149,9 +156,9 @@
   </url>
   
   <url>
-    <loc>https://blog.andrewei.info/2015/12/10/codeforces-round-249-div-2/</loc>
+    <loc>https://blog.andrewei.info/2016/06/07/cplusplus-virtual-function/</loc>
     
-    <lastmod>2018-04-09T01:16:07.244Z</lastmod>
+    <lastmod>2018-04-09T01:16:07.245Z</lastmod>
     
   </url>
   
@@ -170,6 +177,20 @@
   </url>
   
   <url>
+    <loc>https://blog.andrewei.info/2015/12/10/codeforces-round-249-div-2/</loc>
+    
+    <lastmod>2018-04-09T01:16:07.244Z</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.andrewei.info/2015/10/08/codeforces-324div-2/</loc>
+    
+    <lastmod>2018-04-09T01:16:07.243Z</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://blog.andrewei.info/2015/10/05/codeforces-323div-2-c-gcd-table/</loc>
     
     <lastmod>2018-04-09T01:16:07.243Z</lastmod>
@@ -178,13 +199,6 @@
   
   <url>
     <loc>https://blog.andrewei.info/2015/12/08/codeforces-round-248-div-2/</loc>
-    
-    <lastmod>2018-04-09T01:16:07.243Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.andrewei.info/2015/10/08/codeforces-324div-2/</loc>
     
     <lastmod>2018-04-09T01:16:07.243Z</lastmod>
     
@@ -229,13 +243,6 @@
     <loc>https://blog.andrewei.info/2015/09/23/001-2/</loc>
     
     <lastmod>2018-04-09T01:16:07.240Z</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.andrewei.info/404/index.html</loc>
-    
-    <lastmod>2018-04-09T01:16:07.239Z</lastmod>
     
   </url>
   
