@@ -331,6 +331,184 @@
   
 
   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+    <link itemprop="mainEntityOfPage" href="https://blog.andrewei.info/2019/05/18/java-optional/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/header.jpg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Andrewei">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/05/18/java-optional/" itemprop="url">Optional 详解</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-18T10:36:48+08:00">
+                2019-05-18
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category" >
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/编程语言/" itemprop="url" rel="index">
+                    <span itemprop="name">编程语言</span>
+                  </a>
+                </span>
+
+                
+                
+                  ， 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/编程语言/JAVA/" itemprop="url" rel="index">
+                    <span itemprop="name">JAVA</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/05/18/java-optional/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count disqus-comment-count"
+                        data-disqus-identifier="2019/05/18/java-optional/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          <h3 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h3><ol>
+<li><p><code>Optional</code> 的出现主要为了解决 <code>NullPointerExcepton</code> 的异常。</p>
+</li>
+<li><p><code>Optional</code> 是一个值的容器，用来存储一个 <code>Object</code> 或者 <code>null</code>。</p>
+</li>
+<li><p>它是一个<code>基于值的类(value-base class)</code>。</p>
+<blockquote>
+<p>基于值的类(value-base class) 需要满足以下几个条件:</p>
+<ol>
+<li>必须为 <code>final</code> 和 不可变的(可以包含可变对象的引用)；</li>
+<li>必须实现 <code>equals</code>、 <code>hashCode</code> 和 <code>toString</code> 方法。并且这些方法必须仅根据当前实例的状态独自计算，而不是根据他的标识或者其他对象的状态、变量计算；</li>
+<li>不使用身份敏感的操作，例如实例之间通过引用的 <code>==</code> 来判等、实例的 <code>hashCode</code> 已经实例内在的锁；</li>
+<li>两个实例的相等，仅仅基于 <code>equals()</code> 方法，而不基于引用的相等(==)；</li>
+<li>没有可访问的构造方法(构造方法为私有)，仅仅通过工厂方法来实例化对象，但是工厂方法不保证返回实例的一致性(即：第一次调用与第二次调用可能返回的实例是不同的)；</li>
+<li>如果使用 <code>equals</code> 方法判断两个实例是相同的，那么这两个实例之间可以随意替换。</li>
+</ol>
+</blockquote>
+</li>
+</ol>
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/05/18/java-optional/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <div>
+      
+    </div>
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
     <link itemprop="mainEntityOfPage" href="https://blog.andrewei.info/2019/05/04/java-lambda/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1792,181 +1970,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
-    <link itemprop="mainEntityOfPage" href="https://blog.andrewei.info/2016/04/11/network-flows/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Andrewei">
-      <meta itemprop="description" content="">
-      <meta itemprop="image" content="/images/header.jpg">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Andrewei">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2016/04/11/network-flows/" itemprop="url">网络流入门</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2016-04-11T16:51:36+08:00">
-                2016-04-11
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category" >
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/算法/" itemprop="url" rel="index">
-                    <span itemprop="name">算法</span>
-                  </a>
-                </span>
-
-                
-                
-                  ， 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/算法/图论/" itemprop="url" rel="index">
-                    <span itemprop="name">图论</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-              <span class="post-comments-count">
-                <span class="post-meta-divider">|</span>
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-comment-o"></i>
-                </span>
-                <a href="/2016/04/11/network-flows/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count disqus-comment-count"
-                        data-disqus-identifier="2016/04/11/network-flows/" itemprop="commentCount"></span>
-                </a>
-              </span>
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          <h2 id="基本概念-从书上摘抄-可以直接跳过不看"><a href="#基本概念-从书上摘抄-可以直接跳过不看" class="headerlink" title="基本概念(从书上摘抄,可以直接跳过不看)"></a>基本概念(从书上摘抄,可以直接跳过不看)</h2><h3 id="容量网络和网络最大流"><a href="#容量网络和网络最大流" class="headerlink" title="容量网络和网络最大流"></a>容量网络和网络最大流</h3><p><strong> 容量网络: </strong> 设 <code>G(V, E)</code>是一个有向网络, 在 V 中指定了一个顶点, 称为源点(记为 Vs ), 以及另一个顶点, 称为汇点(记为 Vt); 对于每一条弧 <code>&lt;u, v&gt;∈E</code>, 对应有一个权值 c(u, v)&gt;0, 称为<code>弧的容量</code>, 通常把这样的有向网络 G 称为容量网络。</p>
-<blockquote>
-<p>也就是指: 一个拥有源点、汇点并且可以容纳流量的图.</p>
-</blockquote>
-<p><strong> 弧的流量: </strong> 通过容量网络 G 中每条弧 <code>&lt;u, v&gt;</code> 上的实际流量(简称流量), 记为 <code>f(u, v)</code>。<br><strong> 网络流: </strong> 所有弧上流量的集合 <code>f = { f(u, v) }</code>,称为该容量网络 G 的一个网络流。<br><strong> 可行流: </strong> 在容量网络 <code>G(V, E)</code> 中, 满足以下条件的网络流 f, 称为可行流:</p>
-<ul>
-<li><strong> 弧流量限制条件: </strong> $ 0 ≤ f(u, v) ≤ c(u, v)$</li>
-<li><strong> 平衡条件: </strong> 除了 Vs, Vt 外, 其余的点流入的流量总和等于流出的流量总和, 其中 <code>Vs 流出的流量总和 - 流出的流量总和 = f</code>, <code>Vt 流入的流量总和 - 流出的流量总和 = f</code>, 并且称 <code>f</code> 为可性流的流量.</li>
-</ul>
-<blockquote>
-<p>也就是指: 在图中有一条从 Vs 到 Vt 的路径, 这条路径上起点 $f_o - f_i = f$, 终点 $f_i - f_o = f$， 其他的点 $f_i == f_o$, 并且所有的边的当前流量小于等于最大流量.(其中 $f_i$ 代表流入流量, $f_o$ 代表流出流量)<br>
-          <!--noindex-->
-          <div class="post-button text-center">
-            <a class="btn" href="/2016/04/11/network-flows/#more" rel="contents">
-              阅读全文 &raquo;
-            </a>
-          </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <div>
-      
-    </div>
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -2012,7 +2020,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">30</span>
+                <span class="site-state-item-count">31</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -2034,7 +2042,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">40</span>
+                <span class="site-state-item-count">41</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
