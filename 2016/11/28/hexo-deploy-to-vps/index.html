@@ -469,7 +469,7 @@
 <p>这个目录要给 <code>git</code> 用户访问，<code>blog.git</code> 仓库收到提交后，<code>git</code> 用户要把提交的内容再 <code>checkout</code> 到 <code>/var/www/blog/</code> 目录。因为 <code>root</code> 用户创建的这个目录 <code>git</code> 用户没有写权限，所以要把这个目录的所有权交给 <code>git</code> 用户：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chown git:git blog</span><br></pre></td></tr></table></figure></p>
 <p>再用 <code>ls -l</code> 查看：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">drwxr-xr-x  2 git git 4096 10月 27 00:19 blog</span><br></pre></td></tr></table></figure></p>
 <p>切换到 <code>git</code> 用户执行：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd ~</span><br><span class="line">git clone blog.git /var/www/blog</span><br></pre></td></tr></table></figure></p>
-<p>最后一步，处理 <code>blog.git</code> 提交的事件，自动更新内容到 <code>blog</code> 目录。在 <code>git</code> 用户下执行：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cd ~/blog.git/hooks</span><br><span class="line">touch post-receive</span><br><span class="line">cat &gt; post-receive &lt;&lt; EOF</span><br><span class="line"><span class="meta">&gt;</span><span class="bash"> <span class="comment">#!/bin/bash -l</span></span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash"> <span class="built_in">unset</span> GIT_DIR</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash"> <span class="built_in">cd</span> /var/www/blog &amp;&amp; git pull</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash"> EOF</span></span><br></pre></td></tr></table></figure></p>
+<p>最后一步，处理 <code>blog.git</code> 提交的事件，自动更新内容到 <code>blog</code> 目录。在 <code>git</code> 用户下执行：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cd ~/blog.git/hooks</span><br><span class="line">touch post-receive</span><br><span class="line">cat &gt; post-receive &lt;&lt; EOF</span><br><span class="line"><span class="meta">&gt;</span> #!/bin/bash -l</span><br><span class="line"><span class="meta">&gt;</span> unset GIT_DIR</span><br><span class="line"><span class="meta">&gt;</span> cd /var/www/blog &amp;&amp; git pull</span><br><span class="line"><span class="meta">&gt;</span> EOF</span><br></pre></td></tr></table></figure></p>
 <p>给脚本加上执行权限：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">chmod +x post-receive</span><br></pre></td></tr></table></figure></p>
 <h2 id="配置本地-Hexo-的部署信息"><a href="#配置本地-Hexo-的部署信息" class="headerlink" title="配置本地 Hexo 的部署信息"></a>配置本地 Hexo 的部署信息</h2><p>打开 <code>_config.yml</code> 文件，找到 <code>deploy</code> 字段，修改如下：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">deploy: </span><br><span class="line">  type: git</span><br><span class="line">  message: update</span><br><span class="line">  repository: git@&lt;your-ip&gt;:blog.git</span><br><span class="line">  branch: master</span><br></pre></td></tr></table></figure></p>
 <p>如果出于安全或其它原因考虑，你修改了 SSH 默认的端口，那么上面 <code>repository</code> 的配置要做如下修改：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">repository: ssh://git@&lt;your-ip&gt;:&lt;your-port&gt;/~/blog.git</span><br></pre></td></tr></table></figure></p>
@@ -637,7 +637,7 @@
           
             <div class="site-state-item site-state-posts">
               <a href="/archives">
-                <span class="site-state-item-count">32</span>
+                <span class="site-state-item-count">33</span>
                 <span class="site-state-item-name">日志</span>
               </a>
             </div>
@@ -659,7 +659,7 @@
             
             <div class="site-state-item site-state-tags">
               <a href="/tags/index.html">
-                <span class="site-state-item-count">41</span>
+                <span class="site-state-item-count">42</span>
                 <span class="site-state-item-name">标签</span>
               </a>
             </div>
