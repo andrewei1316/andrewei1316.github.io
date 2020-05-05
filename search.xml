@@ -5,7 +5,7 @@
     
     <entry>
       <title><![CDATA[java stream]]></title>
-      <url>https://blog.andrewei.info/2019/06/02/java-stream/</url>
+      <url>https://blog.andrewei.me/2019/06/02/java-stream/</url>
       <content type="html"></content>
       
         <categories>
@@ -29,7 +29,7 @@
     
     <entry>
       <title><![CDATA[方法引用]]></title>
-      <url>https://blog.andrewei.info/2019/06/02/method-reference/</url>
+      <url>https://blog.andrewei.me/2019/06/02/method-reference/</url>
       <content type="html"><![CDATA[<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p><code>方法引用</code>的基础是 Lambda 表达式，它可以认为是 Lambda 表达式的语法糖，用来简化开发。</p>
 <p>在我们使用Lambda表达式的时候，<code>-&gt;</code> 右边部分是要执行的代码，即要完成的功能，可以把这部分称作 Lambda 体。有时候，当我们想要实现一个函数式接口的那个抽象方法，但是已经有类实现了我们想要的功能，这个时候我们就可以用方法引用来直接使用现有类的功能去实现。</p>
 <a id="more"></a>
@@ -64,7 +64,7 @@
     
     <entry>
       <title><![CDATA[Optional 详解]]></title>
-      <url>https://blog.andrewei.info/2019/05/18/java-optional/</url>
+      <url>https://blog.andrewei.me/2019/05/18/java-optional/</url>
       <content type="html"><![CDATA[<h3 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h3><ol>
 <li><p><code>Optional</code> 的出现主要为了解决 <code>NullPointerExcepton</code> 的异常。</p>
 </li>
@@ -133,7 +133,7 @@
     
     <entry>
       <title><![CDATA[Lambda 表达式与函数式接口]]></title>
-      <url>https://blog.andrewei.info/2019/05/04/java-lambda/</url>
+      <url>https://blog.andrewei.me/2019/05/04/java-lambda/</url>
       <content type="html"><![CDATA[<blockquote>
 <p>视频教程笔记，视频地址见 <a href="https://www.bilibili.com/video/av46434650" target="_blank" rel="noopener">深入理解 Java8+jdk8 源码级思想</a></p>
 </blockquote>
@@ -210,7 +210,7 @@
     
     <entry>
       <title><![CDATA[利用git将本地Hexo生成的博客部署到服务器]]></title>
-      <url>https://blog.andrewei.info/2016/11/28/hexo-deploy-to-vps/</url>
+      <url>https://blog.andrewei.me/2016/11/28/hexo-deploy-to-vps/</url>
       <content type="html"><![CDATA[<h2 id="hexo-简介"><a href="#hexo-简介" class="headerlink" title="hexo 简介"></a>hexo 简介</h2><p>Hexo 是一个快速、简洁且高效的博客框架。Hexo 使用 Markdown（或其他渲染引擎）解析文章，在几秒内，即可利用靓丽的主题生成静态网页。 由于Hexo最终会生成静态页面，所以在部署的时候我们只需要将静态页面上传到服务器即可。结合git我们就可以实现一键自动部署。下面将介绍如何配置。<br><a id="more"></a></p>
 <h2 id="服务器准备工作"><a href="#服务器准备工作" class="headerlink" title="服务器准备工作"></a>服务器准备工作</h2><h3 id="安装-git"><a href="#安装-git" class="headerlink" title="安装 git"></a>安装 git</h3><p>在服务器上安装 git 工具<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install git</span><br></pre></td></tr></table></figure></p>
 <h3 id="新建-git-用户"><a href="#新建-git-用户" class="headerlink" title="新建 git 用户"></a>新建 git 用户</h3><p>在服务器上新建 <code>git</code> 用户(当然也可以是其他名字)<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">useradd -d /home/git -m git</span><br></pre></td></tr></table></figure></p>
@@ -261,7 +261,7 @@
     
     <entry>
       <title><![CDATA[在Ubuntu16.04上连接L2TP/IPsec的VPN]]></title>
-      <url>https://blog.andrewei.info/2016/11/27/Enabling-L2TP-IPSec-on-Ubuntu16-04/</url>
+      <url>https://blog.andrewei.me/2016/11/27/Enabling-L2TP-IPSec-on-Ubuntu16-04/</url>
       <content type="html"><![CDATA[<p>最近有在<code>Ubuntu</code>系统上连接L2TP/IPsec协议的VPN的需求，所以在网上搜了一波，发现一名叫做<code>Werner Jaeger</code>的大神开发了一款名叫 <code>l2tp-ipsec-vpn</code> 的软件可以解决这个问题。但是在 <code>Ubuntu16.04LTS</code> 系统上，这个款软件的软件源已经不存在，后来在 <a href="http://blog.z-proj.com/enabling-l2tp-over-ipsec-on-ubuntu-16-04/" target="_blank" rel="noopener">Enabling L2TP over IPSec on Ubuntu 16.04</a> 这里看到了解决方法，为了做个备份写下这篇博客。<br><a id="more"></a></p>
 <h3 id="安装依赖"><a href="#安装依赖" class="headerlink" title="安装依赖"></a>安装依赖</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install intltool libtool network-manager-dev libnm-util-dev libnm-glib-dev libnm-glib-vpn-dev libnm-gtk-dev libnm-dev libnma-dev ppp-dev libdbus-glib-1-dev libsecret-1-dev libgtk-3-dev libglib2.0-dev xl2tpd strongswan</span><br></pre></td></tr></table></figure>
 <h3 id="下载源码并编译安装"><a href="#下载源码并编译安装" class="headerlink" title="下载源码并编译安装"></a>下载源码并编译安装</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/nm-l2tp/network-manager-l2tp.git  </span><br><span class="line"><span class="meta">#</span> 如果失效可以从这里克隆: git clone https://github.com/andrewei1316/network-manager-l2tp.git</span><br><span class="line">cd network-manager-l2tp  </span><br><span class="line">autoreconf -fi  </span><br><span class="line">intltooliz</span><br><span class="line"></span><br><span class="line">./configure --disable-static --prefix=/usr --sysconfdir=/etc --libdir=/usr/lib/x86_64-linux-gnu --libexecdir=/usr/lib/NetworkManager --localstatedir=/var --with-pppd-plugin-dir=/usr/lib/pppd/2.4.7</span><br><span class="line"></span><br><span class="line">make  </span><br><span class="line">sudo make install</span><br></pre></td></tr></table></figure>
@@ -289,7 +289,7 @@
     
     <entry>
       <title><![CDATA[伸展树(SplayTree)]]></title>
-      <url>https://blog.andrewei.info/2016/07/11/splay-tree/</url>
+      <url>https://blog.andrewei.me/2016/07/11/splay-tree/</url>
       <content type="html"><![CDATA[<h2 id="预备知识"><a href="#预备知识" class="headerlink" title="预备知识"></a>预备知识</h2><ol>
 <li>树的遍历</li>
 <li>二叉树的基本知识</li>
@@ -384,7 +384,7 @@
     
     <entry>
       <title><![CDATA[树状数组]]></title>
-      <url>https://blog.andrewei.info/2016/07/05/binary-indexed-trees/</url>
+      <url>https://blog.andrewei.me/2016/07/05/binary-indexed-trees/</url>
       <content type="html"><![CDATA[<h2 id="引入"><a href="#引入" class="headerlink" title="引入"></a>引入</h2><p>早就听说过这个数据结构，但是他所做的事情线段树都可以做。年少无知的我以为知道了线段树就可以不去理会这个数据结构，然而每次做题，都要敲长长的线段树，心里苦啊。 不就是一个树状数组么，去看！</p>
 <a id="more"></a>
 <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>树状数组可以做什么，树状数组可以维护一个序列的前缀和，并且在 $log(n)$ 的时间复杂度内进行更新和查询区间和。<br>它主要有两种操作：</p>
@@ -587,7 +587,7 @@
     
     <entry>
       <title><![CDATA[C++虚函数与多态性]]></title>
-      <url>https://blog.andrewei.info/2016/06/07/cplusplus-virtual-function/</url>
+      <url>https://blog.andrewei.me/2016/06/07/cplusplus-virtual-function/</url>
       <content type="html"><![CDATA[<h3 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h3><p>本文转自 <a href="http://www.cppblog.com/dawnbreak/archive/2009/03/10/76084.aspx" target="_blank" rel="noopener">http://www.cppblog.com/dawnbreak/archive/2009/03/10/76084.aspx</a> 感谢作者<br>总觉得C++很神奇，在继承和多态性方面比JAVA要灵活的许多，今天看到了上面这个介绍虚函数的文章觉得写的很好，分享到这里。</p>
 <hr>
 <a id="more"></a>
@@ -651,7 +651,7 @@
     
     <entry>
       <title><![CDATA[解决ubuntu下sublime中无法输入中文的问题]]></title>
-      <url>https://blog.andrewei.info/2016/05/05/sublime-input-Chinese/</url>
+      <url>https://blog.andrewei.me/2016/05/05/sublime-input-Chinese/</url>
       <content type="html"><![CDATA[<p>sublime是一款非常好用的代码编辑器, 支持多种语言的语法高亮, 支持多种插件拓展, 但是最近在使用sublime写博客的时候发现, 不能在里面输入中文, 特地找了一波方法, 现整理如下:</p>
 <a id="more"></a>
 <p><strong> 方法一 : </strong><br>为了解决这个问题一些大牛已经开始写一些自动化的脚本, 比如 <a href="https://github.com/lyfeyaj/sublime-text-imfix" target="_blank" rel="noopener">sublime-text-imfix</a>具体的使用方法作者也已经给出:</p>
@@ -694,7 +694,7 @@
     
     <entry>
       <title><![CDATA[ubuntu 安装 deb 的方法]]></title>
-      <url>https://blog.andrewei.info/2016/04/27/ubuntu-install-deb/</url>
+      <url>https://blog.andrewei.me/2016/04/27/ubuntu-install-deb/</url>
       <content type="html"><![CDATA[<p>ubuntu 安装 deb 软件包的方法有两种</p>
 <ol>
 <li>直接双击 deb 文件, 此时会自动调用系统的软件中心然后根据提示进行安装</li>
@@ -724,7 +724,7 @@
     
     <entry>
       <title><![CDATA[POJ1273(Drainage Ditches)]]></title>
-      <url>https://blog.andrewei.info/2016/04/15/poj1273/</url>
+      <url>https://blog.andrewei.me/2016/04/15/poj1273/</url>
       <content type="html"><![CDATA[<p>题目链接：<a href="http://poj.org/problem?id=1273" target="_blank" rel="noopener">http://poj.org/problem?id=1273</a></p>
 <h2 id="题目大意"><a href="#题目大意" class="headerlink" title="题目大意:"></a>题目大意:</h2><p>下雨的时候约翰的田里总是积水，积水把他种的三叶草给淹了，他于是做了若干排水沟，每条沟在起始处安置一个阀门来控制这条沟的最大排水量，现在给出沟的条数以及阀门的个数。并给出每条沟的最大排水量。约翰的田里的积水处是阀门1，排出水的位置是最后一个阀门。求约翰在处理积水时的最大排出量。<br><a id="more"></a></p>
 <h2 id="思路"><a href="#思路" class="headerlink" title="思路:"></a>思路:</h2><p>题意抽象一下即有一个n个点的图, 边权代表最大流量, 求源点为1, 汇点为n的最大流.<br>题目为最大流的裸题, 用于练习算法模板.</p>
@@ -755,7 +755,7 @@
     
     <entry>
       <title><![CDATA[网络流入门]]></title>
-      <url>https://blog.andrewei.info/2016/04/11/network-flows/</url>
+      <url>https://blog.andrewei.me/2016/04/11/network-flows/</url>
       <content type="html"><![CDATA[<h2 id="基本概念-从书上摘抄-可以直接跳过不看"><a href="#基本概念-从书上摘抄-可以直接跳过不看" class="headerlink" title="基本概念(从书上摘抄,可以直接跳过不看)"></a>基本概念(从书上摘抄,可以直接跳过不看)</h2><h3 id="容量网络和网络最大流"><a href="#容量网络和网络最大流" class="headerlink" title="容量网络和网络最大流"></a>容量网络和网络最大流</h3><p><strong> 容量网络: </strong> 设 <code>G(V, E)</code>是一个有向网络, 在 V 中指定了一个顶点, 称为源点(记为 Vs ), 以及另一个顶点, 称为汇点(记为 Vt); 对于每一条弧 <code>&lt;u, v&gt;∈E</code>, 对应有一个权值 c(u, v)&gt;0, 称为<code>弧的容量</code>, 通常把这样的有向网络 G 称为容量网络。</p>
 <blockquote>
 <p>也就是指: 一个拥有源点、汇点并且可以容纳流量的图.</p>
@@ -897,7 +897,7 @@
     
     <entry>
       <title><![CDATA[图的连通性问题]]></title>
-      <url>https://blog.andrewei.info/2016/04/06/Connectivity-of-Graphs/</url>
+      <url>https://blog.andrewei.me/2016/04/06/Connectivity-of-Graphs/</url>
       <content type="html"><![CDATA[<h2 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h2><h3 id="无向图"><a href="#无向图" class="headerlink" title="无向图"></a>无向图</h3><a id="more"></a>
 <ul>
 <li><p><strong>连通图和非联通图</strong>： 如果无向图 G 中任意一对顶点都是连通的，则称此图是连通图（connected graph）；相反，如<br>果一个无向图不是连通图，则称为非连通图（disconnected graph）。对非连通图G，其极大连通子图称为连通分量（connected component，或连通分支），连通分支数记为w(G)。</p>
@@ -1034,7 +1034,7 @@
     
     <entry>
       <title><![CDATA[C++ STL简介]]></title>
-      <url>https://blog.andrewei.info/2016/04/06/cppSTL/</url>
+      <url>https://blog.andrewei.me/2016/04/06/cppSTL/</url>
       <content type="html"><![CDATA[<p>本文转自: <a href="https://www.zybuluo.com/comzyh/note/138935" target="_blank" rel="noopener">https://www.zybuluo.com/comzyh/note/138935</a></p>
 <h2 id="参考网站"><a href="#参考网站" class="headerlink" title="参考网站"></a>参考网站</h2><p>推荐大家去这些网站查询自己需要的东西</p>
 <ul>
@@ -1216,7 +1216,7 @@
     
     <entry>
       <title><![CDATA[Codeforces Round #251 (Div. 2)]]></title>
-      <url>https://blog.andrewei.info/2015/12/16/codeforces-round-251-div-2/</url>
+      <url>https://blog.andrewei.me/2015/12/16/codeforces-round-251-div-2/</url>
       <content type="html"><![CDATA[<p>比赛链接: <a href="http://codeforces.com/contest/439" target="_blank" rel="noopener">http://codeforces.com/contest/439</a></p>
 <h2 id="A题-Devu-the-Singer-and-Churu-the-Joker"><a href="#A题-Devu-the-Singer-and-Churu-the-Joker" class="headerlink" title="A题(Devu, the Singer and Churu, the Joker)"></a>A题(<a href="http://codeforces.com/contest/439/problem/A" target="_blank" rel="noopener">Devu, the Singer and Churu, the Joker</a>)</h2><h3 id="题目大意"><a href="#题目大意" class="headerlink" title="题目大意:"></a>题目大意:</h3><p>Devu 喜欢唱歌，唱一首歌的时间为 t, 每唱完一首歌至少要休息 10 分钟，Churu 喜欢讲笑话，讲一个笑话的时间为 5 分钟, 现给定两个整数 $n(1 &lt;= n &lt;= 100) d(1 &lt;= d &lt;= 10000)$, 分别表示Devu在个人演唱会上要唱 n 首歌，演唱会的总时间为 $d$, 接下来给定$n$个整数表示 $t_i(1 &lt;= t &lt;= 100)$, 表示这$n$首歌的时间，问在保证 Devu 把所有歌唱完的情况下，Churu 最多可以讲多少个笑话，如果 Devu 不能把 $n$ 首歌唱完，输出 -1.</p>
 <a id="more"></a>
@@ -1256,7 +1256,7 @@
     
     <entry>
       <title><![CDATA[Codeforces Round #249 (Div. 2)]]></title>
-      <url>https://blog.andrewei.info/2015/12/10/codeforces-round-249-div-2/</url>
+      <url>https://blog.andrewei.me/2015/12/10/codeforces-round-249-div-2/</url>
       <content type="html"><![CDATA[<p>比赛链接: <a href="http://codeforces.com/contest/435" target="_blank" rel="noopener">http://codeforces.com/contest/435</a></p>
 <h2 id="A题-Queue-on-Bus-Stop"><a href="#A题-Queue-on-Bus-Stop" class="headerlink" title="A题(Queue on Bus Stop)"></a>A题(<a href="http://codeforces.com/contest/435/problem/A" target="_blank" rel="noopener">Queue on Bus Stop</a>)</h2><h3 id="题目大意"><a href="#题目大意" class="headerlink" title="题目大意:"></a>题目大意:</h3><p>已知每辆公交车最多可以载 $m(1 &lt;= m &lt;= 100)$ 个人，给出 $n(1 &lt;= n &lt;= 100)$ 组人, 人数分别为 $a_i(1 &lt;= i &lt;= m)$, 每辆公交车尽量可以载更多的组, 但是不能把每组人分开载， 问把这 $n$ 组人全部载上最少需要多少辆公交车。注意: 要按顺序一组一组的上车。<a id="more"></a></p>
 <h3 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路:"></a>解题思路:</h3><p>模拟一下上车的过程即可, 每辆车尽量让更多的组上车，实在放不下再等下一辆车。</p>
@@ -1290,7 +1290,7 @@
     
     <entry>
       <title><![CDATA[Codeforces Round #248 (Div. 2)]]></title>
-      <url>https://blog.andrewei.info/2015/12/08/codeforces-round-248-div-2/</url>
+      <url>https://blog.andrewei.me/2015/12/08/codeforces-round-248-div-2/</url>
       <content type="html"><![CDATA[<p>比赛链接: <a href="http://codeforces.com/contest/433" target="_blank" rel="noopener">http://codeforces.com/contest/433</a></p>
 <h2 id="A题-Kitahara-Haruki’s-Gift"><a href="#A题-Kitahara-Haruki’s-Gift" class="headerlink" title="A题(Kitahara Haruki’s Gift)"></a>A题(<a href="http://codeforces.com/contest/433/problem/A" target="_blank" rel="noopener">Kitahara Haruki’s Gift</a>)</h2><h3 id="题目大意"><a href="#题目大意" class="headerlink" title="题目大意:"></a>题目大意:</h3><p>有 n(1 &lt;= n &lt;= 100) 个苹果，第 i (1 &lt;= i &lt;= n) 个苹果的价值为 $w_i$ ($w_i$ == 100 or $w_i$ ==200), 求是否可以将苹果分成两部分，使得每一部分的价值相同。(注意：苹果不能分割)</p>
 <a id="more"></a>
@@ -1325,7 +1325,7 @@
     
     <entry>
       <title><![CDATA[Codeforces Round #334 (Div. 2)]]></title>
-      <url>https://blog.andrewei.info/2015/12/07/codeforces-round-334-div-2/</url>
+      <url>https://blog.andrewei.me/2015/12/07/codeforces-round-334-div-2/</url>
       <content type="html"><![CDATA[<p>比赛链接: <a href="http://codeforces.com/contest/604" target="_blank" rel="noopener">http://codeforces.com/contest/604</a></p>
 <h2 id="A题-Uncowed-Forces"><a href="#A题-Uncowed-Forces" class="headerlink" title="A题(Uncowed Forces)"></a>A题(<a href="http://codeforces.com/contest/604/problem/A" target="_blank" rel="noopener">Uncowed Forces</a>)</h2><h3 id="题目大意"><a href="#题目大意" class="headerlink" title="题目大意:"></a>题目大意:</h3><p>根据给定的CF的计分规则，给出5道题下来CF的最终得分。<a id="more"></a></p>
 <h3 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路:"></a>解题思路:</h3><p>模拟一下就好。</p>
@@ -1362,7 +1362,7 @@
     
     <entry>
       <title><![CDATA[排序算法]]></title>
-      <url>https://blog.andrewei.info/2015/11/03/e6-8e-92-e5-ba-8f-e7-ae-97-e6-b3-95-2/</url>
+      <url>https://blog.andrewei.me/2015/11/03/e6-8e-92-e5-ba-8f-e7-ae-97-e6-b3-95-2/</url>
       <content type="html"><![CDATA[<h2 id="快速排序法"><a href="#快速排序法" class="headerlink" title="快速排序法"></a>快速排序法</h2><h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>快速排序（Quicksort）是对冒泡排序的一种改进。由C. A. R. Hoare在1962年提出。它的基本思想是：通过一趟排序将要排序的数据分割成独立的两部分，其中一部分的所有数据都比另外一部分的所有数据都要小，然后再按此方法对这两部分数据分别进行快速排序，整个排序过程可以递归进行，以此达到整个数据变成有序序列.<a id="more"></a></p>
 <h3 id="基本操作"><a href="#基本操作" class="headerlink" title="基本操作"></a>基本操作</h3><p>快速排序使用分治法（Divide and conquer）策略来把一个串行（list）分为两个子串行（sub-lists）。步骤为：</p>
 <ol>
@@ -1483,7 +1483,7 @@
     
     <entry>
       <title><![CDATA[最短路径]]></title>
-      <url>https://blog.andrewei.info/2015/10/28/e6-9c-80-e7-9f-ad-e8-b7-af-e5-be-84/</url>
+      <url>https://blog.andrewei.me/2015/10/28/e6-9c-80-e7-9f-ad-e8-b7-af-e5-be-84/</url>
       <content type="html"><![CDATA[<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>最短路径问题是图论研究中的一个经典算法问题， 旨在寻找图（由结点和路径组成的）中两结点之间的最短路径。 算法具体的形式包括：<a id="more"></a></p>
 <ol>
 <li>确定起点的最短路径问题 - 即已知起始结点，求最短路径的问题。</li>
@@ -1617,7 +1617,7 @@
     
     <entry>
       <title><![CDATA[生成树]]></title>
-      <url>https://blog.andrewei.info/2015/10/26/e7-94-9f-e6-88-90-e6-a0-91/</url>
+      <url>https://blog.andrewei.me/2015/10/26/e7-94-9f-e6-88-90-e6-a0-91/</url>
       <content type="html"><![CDATA[<h2 id="最小生成树"><a href="#最小生成树" class="headerlink" title="最小生成树"></a>最小生成树</h2><h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>在一给定的无向图G = (V, E) 中，(u, v) 代表连接顶点 u 与顶点 v 的边（即），而 w(u, v) 代表此边的权重，若存在 T 为 E 的子集（即）且为无循环图，使得 的 w(T) 最小，则此 T 为 G 的最小生成树。<br>最小生成树其实是最小权重生成树的简称。 许多应用问题都是一个求无向连通图的最小生成树问题。例如：要在n个城市之间铺设光缆，主要目标是要使这 n 个城市的任意两个之间都可以通信，但铺设光缆的费用很高，且各个城市之间铺设光缆的费用不同；另一个目标是要使铺设光缆的总费用最低。这就需要找到带权的最小生成树。 <a id="more"></a></p>
 <h3 id="性质"><a href="#性质" class="headerlink" title="性质"></a>性质</h3><p>最小生成树的边数必然是顶点数减一，|E| = |V| - 1。<br>最小生成树不可以有环。<br>最小生成树不必是唯一的。</p>
 <h4 id="Prim-算法"><a href="#Prim-算法" class="headerlink" title="Prim 算法"></a>Prim 算法</h4><h5 id="描述"><a href="#描述" class="headerlink" title="描述"></a>描述</h5><p>普里姆算法（Prim算法），图论中的一种算法，可在加权连通图里搜索最小生成树。意即由此算法搜索到的边子集所构成的树中，不但包括了连通图里的所有顶点，且其所有边的权值之和亦为最小。该算法于1930年由捷克数学家沃伊捷赫·亚尔尼克发现；并在1957年由美国计算机科学家罗伯特·普里姆独立发现；1959年，艾兹格·迪科斯彻再次发现了该算法。因此，在某些场合，普里姆算法又被称为DJP算法、亚尔尼克算法或普里姆－亚尔尼克算法。</p>
@@ -1736,7 +1736,7 @@
     
     <entry>
       <title><![CDATA[并查集]]></title>
-      <url>https://blog.andrewei.info/2015/10/26/e5-b9-b6-e6-9f-a5-e9-9b-86/</url>
+      <url>https://blog.andrewei.me/2015/10/26/e5-b9-b6-e6-9f-a5-e9-9b-86/</url>
       <content type="html"><![CDATA[<h2 id="并查集"><a href="#并查集" class="headerlink" title="并查集"></a>并查集</h2><h3 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h3><p>并查集是一种用来管理元素分组情况的数据结构。冰茶既可以高效的进行如下操作。不过需要注意并查集虽然可以进行合并操作，但是却无法进行分割操作。 并查集可以查询元素a和元素b是否属于同一组。 并查集可以合并元素a和元素b所在的组。<a id="more"></a><img src="/images/2015/10/20151026165823.png" alt="QQ截图20151026165823"></p>
 <h3 id="主要操作"><a href="#主要操作" class="headerlink" title="主要操作"></a>主要操作</h3><h4 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h4><p>把每个点所在集合初始化为其自身。<br>通常来说，这个步骤在每次使用该数据结构时只需要执行一次，无论何种实现方式，时间复杂度均为O(N)。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">init</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> i;</span><br><span class="line">    <span class="keyword">for</span>(i = <span class="number">0</span>; i &lt; n; i++)</span><br><span class="line">        par[i] = i;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <h4 id="查找"><a href="#查找" class="headerlink" title="查找"></a>查找</h4><p>查找元素所在的集合，即根节点。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">find</span><span class="params">(<span class="keyword">int</span> x)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(par[x] != x)</span><br><span class="line">        par[x] = find(par[x]);</span><br><span class="line">    <span class="keyword">return</span> par[x];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
@@ -1781,7 +1781,7 @@
     
     <entry>
       <title><![CDATA[Codeforces Round #325 (Div. 2)]]></title>
-      <url>https://blog.andrewei.info/2015/10/13/codeforces-round-325-div-2/</url>
+      <url>https://blog.andrewei.me/2015/10/13/codeforces-round-325-div-2/</url>
       <content type="html"><![CDATA[<p>比赛链接：<a href="http://codeforces.com/contest/586" target="_blank" rel="noopener">http://codeforces.com/contest/586</a></p>
 <h2 id="A题-Alena’s-Schedule"><a href="#A题-Alena’s-Schedule" class="headerlink" title="A题(Alena’s Schedule)"></a>A题(<a href="http://codeforces.com/contest/586/problem/A" target="_blank" rel="noopener">Alena’s Schedule</a>)</h2><h3 id="题目大意："><a href="#题目大意：" class="headerlink" title="题目大意："></a>题目大意：</h3><p>抽象出来就是给你一个 01 串，去除前导零和末尾的零后，统计 1 的个数与连续小于 2 的 0 的个数的和。<a id="more"></a></p>
 <h3 id="解题思路："><a href="#解题思路：" class="headerlink" title="解题思路："></a>解题思路：</h3><p>模拟一下这个统计过程就行了。</p>
@@ -1823,7 +1823,7 @@
     
     <entry>
       <title><![CDATA[ZOJ 3911(Prime Query)]]></title>
-      <url>https://blog.andrewei.info/2015/10/11/zoj-3911prime-query/</url>
+      <url>https://blog.andrewei.me/2015/10/11/zoj-3911prime-query/</url>
       <content type="html"><![CDATA[<p>题目链接：<a href="http://acm.zju.edu.cn/onlinejudge/showProblem.do?problemId=5638" target="_blank" rel="noopener">http://acm.zju.edu.cn/onlinejudge/showProblem.do?problemId=5638</a></p>
 <h3 id="题目大意："><a href="#题目大意：" class="headerlink" title="题目大意："></a>题目大意：</h3><p>给出 n 个数，并进行一下操作：</p>
 <p>A v l, 将下标为 l 的数加上 v;<a id="more"></a></p>
@@ -1863,7 +1863,7 @@
     
     <entry>
       <title><![CDATA[Codeforces #324(div.2)]]></title>
-      <url>https://blog.andrewei.info/2015/10/08/codeforces-324div-2/</url>
+      <url>https://blog.andrewei.me/2015/10/08/codeforces-324div-2/</url>
       <content type="html"><![CDATA[<p>比赛题目链接：<a href="http://codeforces.com/contest/584" target="_blank" rel="noopener">http://codeforces.com/contest/584</a></p>
 <h2 id="A题-Olesya-and-Rodion"><a href="#A题-Olesya-and-Rodion" class="headerlink" title="A题(Olesya and Rodion)"></a>A题(<a href="http://codeforces.com/contest/584/problem/A" target="_blank" rel="noopener">Olesya and Rodion</a>)</h2><h3 id="题目大意："><a href="#题目大意：" class="headerlink" title="题目大意："></a>题目大意：</h3><p>给定两个数字 n(1 &lt;= n &lt;= 100) 和 t(2 &lt;= t &lt;= 10) 输出一个长度为 n 的整数，使其可以被 t 整除。</p>
 <a id="more"></a>
@@ -1905,7 +1905,7 @@
     
     <entry>
       <title><![CDATA[最近公共祖先(LCA)的三种求解方法]]></title>
-      <url>https://blog.andrewei.info/2015/10/08/e6-9c-80-e8-bf-91-e5-85-ac-e5-85-b1-e7-a5-96-e5-85-88lca-e7-9a-84-e4-b8-89-e7-a7-8d-e6-b1-82-e8-a7-a3-e6-96-b9-e6-b3-95/</url>
+      <url>https://blog.andrewei.me/2015/10/08/e6-9c-80-e8-bf-91-e5-85-ac-e5-85-b1-e7-a5-96-e5-85-88lca-e7-9a-84-e4-b8-89-e7-a7-8d-e6-b1-82-e8-a7-a3-e6-96-b9-e6-b3-95/</url>
       <content type="html"><![CDATA[<h2 id="简述"><a href="#简述" class="headerlink" title="简述"></a>简述</h2><p>LCA（Least Common Ancestors），即最近公共祖先，是指这样一个问题：在有根树中，找出某两个结点 u 和 v 最近的公共祖先（另一种说法，离树根最远的公共祖先）。</p>
 <a id="more"></a>
 <h2 id="算法"><a href="#算法" class="headerlink" title="算法"></a>算法</h2><h3 id="RMQ-ST-在线算法"><a href="#RMQ-ST-在线算法" class="headerlink" title="RMQ_ST 在线算法"></a>RMQ_ST 在线算法</h3><h4 id="简介"><a href="#简介" class="headerlink" title="简介"></a><strong>简介</strong></h4><p>RMQ（Range Minimum/Maximum Query）, 即区间最值查询, 是指这样一个问题: 对于长度为 n 的数列 A，回答若干询问 RMQ（A, i, j）(i, j &lt;= n), 返回数列A中下标在i，j之间的最小/大值。所谓在线算法，是指用户每输入一个查询便马上处理一个查询。该算法一般用较长的时间做预处理，待信息充足以后便可以用较少的时间回答每个查询。ST（Sparse Table）算法是一个非常有名的在线处理RMQ问题的算法，<strong>它可以在 O(nlogn) 时间内进行预处理，然后在 O(1) 时间内回答每个查询</strong>。</p>
@@ -1961,7 +1961,7 @@
     
     <entry>
       <title><![CDATA[HDU 5495]]></title>
-      <url>https://blog.andrewei.info/2015/10/05/hdu-5495/</url>
+      <url>https://blog.andrewei.me/2015/10/05/hdu-5495/</url>
       <content type="html"><![CDATA[<p>题目链接: <a href="http://acm.hdu.edu.cn/showproblem.php?pid=5495" target="_blank" rel="noopener">http://acm.hdu.edu.cn/showproblem.php?pid=5495</a></p>
 <h3 id="题目大意："><a href="#题目大意：" class="headerlink" title="题目大意："></a>题目大意：</h3><p>现给出两个序列 a[1…n], b[1…n], 他们都是 1 - n 的一个排列，要求寻找另一个序列 p[1…n], 使得新序列 a[p[i]…..p[n]] 和 b[p[i]…p[n]] 的最长公共子序列的长度最大.  输出最长公共子序列的长度。</p>
 <a id="more"></a>
@@ -1992,7 +1992,7 @@
     
     <entry>
       <title><![CDATA[Codeforces #323(div.2) C D题]]></title>
-      <url>https://blog.andrewei.info/2015/10/05/codeforces-323div-2-c-gcd-table/</url>
+      <url>https://blog.andrewei.me/2015/10/05/codeforces-323div-2-c-gcd-table/</url>
       <content type="html"><![CDATA[<h2 id="C题（GCD-Table）"><a href="#C题（GCD-Table）" class="headerlink" title="C题（GCD Table）"></a>C题（GCD Table）</h2><p>题目链接: <a href="http://codeforces.com/contest/583/problem/C" target="_blank" rel="noopener">http://codeforces.com/contest/583/problem/C</a></p>
 <h3 id="题目大意"><a href="#题目大意" class="headerlink" title="题目大意:"></a>题目大意:</h3><p>定义 gcd 矩阵 b 为数组 a 中的元素两两求 GCD 得到， 即 b[i][j] = GCD(a[i], a[j]), 现给出数组 b 中所有数的乱序，求数组 a 中的元素，存在多种解时，给出任意一个解的任意一种排列。</p>
 <a id="more"></a>
@@ -2031,7 +2031,7 @@
     
     <entry>
       <title><![CDATA[HDU 4821 字符串hash]]></title>
-      <url>https://blog.andrewei.info/2015/10/04/hdu-4821/</url>
+      <url>https://blog.andrewei.me/2015/10/04/hdu-4821/</url>
       <content type="html"><![CDATA[<p>题目链接：<a href="http://acm.hdu.edu.cn/showproblem.php?pid=4821" target="_blank" rel="noopener">http://acm.hdu.edu.cn/showproblem.php?pid=4821</a></p>
 <h3 id="题目大意"><a href="#题目大意" class="headerlink" title="题目大意:"></a>题目大意:</h3><p>给定一个字符串 S 问 S 中有几个字串可以满足如下条件：</p>
 <ol>
@@ -2075,7 +2075,7 @@
     
     <entry>
       <title><![CDATA[利用 jquery.tablednd 插件实现表格拖动排序]]></title>
-      <url>https://blog.andrewei.info/2015/10/03/001-4/</url>
+      <url>https://blog.andrewei.me/2015/10/03/001-4/</url>
       <content type="html"><![CDATA[<p>对表格进行拖动排序，自动编号等都可以通过 JS 来实现，tableDnd 是一个可以实现表格拖动排序的插件。</p>
 <a id="more"></a>
 <h3 id="为页面导入JS"><a href="#为页面导入JS" class="headerlink" title="为页面导入JS"></a>为页面导入JS</h3><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;script src=<span class="string">"./js/jquery-2.1.4.min.js"</span> type=<span class="string">"text/javascript"</span>&gt;&lt;/script&gt;</span><br><span class="line">    &lt;script src=<span class="string">"./js/jquery.tablednd.js"</span> type=<span class="string">"text/javascript"</span>&gt;&lt;/script&gt;</span><br></pre></td></tr></table></figure>
@@ -2109,7 +2109,7 @@
     
     <entry>
       <title><![CDATA[Spring声明式事务管理与配置详解]]></title>
-      <url>https://blog.andrewei.info/2015/10/03/001-3/</url>
+      <url>https://blog.andrewei.me/2015/10/03/001-3/</url>
       <content type="html"><![CDATA[<p>写在前面：本博文为网络资源，文章后面有参考链接，写本文的目的是博主在利用 Hibernate + Spring 连接数据库进行数据更改时发现事物不能被提交，在经历了一个下午的各种折腾之后发现原因是当利用 Spring 接管事物时，Hibernate的 <code>hibernate.cfg.xml</code> 配置文件中的<br><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">property</span> <span class="attr">name</span>=<span class="string">"current_session_context_class"</span>&gt;</span>thread<span class="tag">&lt;/<span class="name">property</span>&gt;</span></span><br></pre></td></tr></table></figure></p>
 <p>应该注释掉，否则spring无法接管，希望后人少走弯路。</p>
 <a id="more"></a>
@@ -2174,7 +2174,7 @@
     
     <entry>
       <title><![CDATA[J2EE 利用 hibernate 与数据库交互入门]]></title>
-      <url>https://blog.andrewei.info/2015/09/23/001-2/</url>
+      <url>https://blog.andrewei.me/2015/09/23/001-2/</url>
       <content type="html"><![CDATA[<h2 id="hibernate-简介"><a href="#hibernate-简介" class="headerlink" title="hibernate 简介"></a>hibernate 简介</h2><blockquote>
 <p>Hibernate是一个开放源代码的对象关系映射框架，它对JDBC进行了非常轻量级的对象封装，使得Java程序员可以随心所欲的使用对象编程思维来操纵数据库。 Hibernate可以应用在任何使用JDBC的场合，既可以在Java的客户端程序使用，也可以在Servlet/JSP的Web应用中使用，最具革命意义的是，Hibernate可以在应用EJB的J2EE架构中取代CMP，完成数据持久化的重任。</p>
 <p>——-来自百度百科</p>
