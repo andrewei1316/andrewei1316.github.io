@@ -2,13 +2,6 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>https://blog.andrewei.me/2019/06/02/java-stream/</loc>
-    
-    <lastmod>2019-06-02T08:53:30.915Z</lastmod>
-    
-  </url>
-  
-  <url>
     <loc>https://blog.andrewei.me/2019/06/02/method-reference/</loc>
     
     <lastmod>2019-06-02T08:49:33.290Z</lastmod>

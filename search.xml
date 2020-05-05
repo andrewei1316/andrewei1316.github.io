@@ -4,30 +4,6 @@
   
     
     <entry>
-      <title><![CDATA[java stream]]></title>
-      <url>https://blog.andrewei.me/2019/06/02/java-stream/</url>
-      <content type="html"></content>
-      
-        <categories>
-            
-            <category> 编程语言 </category>
-            
-            <category> JAVA </category>
-            
-        </categories>
-        
-        
-        <tags>
-            
-            <tag> java </tag>
-            
-            <tag> stream </tag>
-            
-        </tags>
-        
-    </entry>
-    
-    <entry>
       <title><![CDATA[方法引用]]></title>
       <url>https://blog.andrewei.me/2019/06/02/method-reference/</url>
       <content type="html"><![CDATA[<h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p><code>方法引用</code>的基础是 Lambda 表达式，它可以认为是 Lambda 表达式的语法糖，用来简化开发。</p>
