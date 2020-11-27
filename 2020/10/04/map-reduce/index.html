@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monaco:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"andrewei1316.github.io","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="本文是博主学习 MIT6.824 课程的学习笔记，其中会总结论文知识点并加入自己的理解，内容可能与论文原文有出入，想要了解细节的读者可以阅读论文原文或者学习 MIT6.824课程。 MapReduce: Simplified Data Processing on Large Clusters Introduction And MapReduce 简介MapReduce 是一种编程模型，也是一个处理">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MapReduce 总结">
+<meta property="og:url" content="https://andrewei1316.github.io/2020/10/04/map-reduce/index.html">
+<meta property="og:site_name" content="Andrewei&#39;s Blog">
+<meta property="og:description" content="本文是博主学习 MIT6.824 课程的学习笔记，其中会总结论文知识点并加入自己的理解，内容可能与论文原文有出入，想要了解细节的读者可以阅读论文原文或者学习 MIT6.824课程。 MapReduce: Simplified Data Processing on Large Clusters Introduction And MapReduce 简介MapReduce 是一种编程模型，也是一个处理">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://andrewei1316.github.io/images/map-reduce/figure1_execute_overview.png">
+<meta property="article:published_time" content="2020-10-04T05:13:12.000Z">
+<meta property="article:modified_time" content="2020-11-19T13:22:30.705Z">
+<meta property="article:author" content="Andrewei">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://andrewei1316.github.io/images/map-reduce/figure1_execute_overview.png">
+
+<link rel="canonical" href="https://andrewei1316.github.io/2020/10/04/map-reduce/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>MapReduce 总结 | Andrewei's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Andrewei's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Andrewei's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/andrewei1316" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://andrewei1316.github.io/2020/10/04/map-reduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpg">
+      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="description" content="There's no feat, but what we make.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Andrewei's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MapReduce 总结
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-10-04 13:13:12" itemprop="dateCreated datePublished" datetime="2020-10-04T13:13:12+08:00">2020-10-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-11-19 21:22:30" itemprop="dateModified" datetime="2020-11-19T21:22:30+08:00">2020-11-19</time>
+              </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本文是博主学习 <code>MIT6.824</code> 课程的学习笔记，其中会总结论文知识点并加入自己的理解，内容可能与论文原文有出入，想要了解细节的读者可以阅读论文原文或者学习 <code>MIT6.824</code>课程。</p>
+<p><a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/papers/mapreduce.pdf">MapReduce: Simplified Data Processing on Large Clusters</a></p>
+<p><a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/video/1.html">Introduction And MapReduce</a></p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p><code>MapReduce</code> 是一种编程模型，也是一个处理和生成超大数据集算法模型的相关实现。使用 <code>MapReduce</code> 架构的程序能够在大量的普通配置的计算机上实现并行化处理。</p>
+<h2 id="MapReduce-模型"><a href="#MapReduce-模型" class="headerlink" title="MapReduce 模型"></a>MapReduce 模型</h2><p><code>MapReduce</code> 编程模型的处理过程为：输入一个 <code>key/value pair</code> 集合，经过处理后，输出一个 <code>key/value pair</code> 集合作为结果。<br><code>MapReduce</code> 允许用户使用两个函数 <code>Map</code> 和 <code>Reduce</code> 来表达上述计算。</p>
+<ul>
+<li><code>Map</code> 函数接受一个输入的 <code>key/value pair</code> 值，然后产生一个中间 <code>key/value pair</code> 值的集合。<code>MapReduce</code> 把所有 <code>key</code> 为 <code>I</code> 的中间值 <code>value</code>集合在一起后传递给 <code>reduce</code> 函数。</li>
+<li><code>Reduce</code> 函数接受一个中间 <code>key</code> 的值 <code>I</code> 和其<code>value</code>值的集合，由于 <code>value</code> 值可能由于太大无法放入内存中，故通常我们把 <code>value</code> 的迭代器传递给 <code>Reduce</code> 函数。</li>
+</ul>
+<p>上述过程也可以抽象为下面的表达式</p>
+<p>$$ map(k1, v1) -&gt; list(k2, v2) $$</p>
+<p>$$ reduce(k2, list(v2)) -&gt; list(v2) $$</p>
+<a id="more"></a>
+
+<h3 id="一个例子"><a href="#一个例子" class="headerlink" title="一个例子"></a>一个例子</h3><p>下面的例子可以简要说明 <code>MapReduce</code> 模型的计算过程，当我们要计算一个很大的文档集合中每个单词出现的次数时，可以用下面的方式：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">map(String key, String value):</span><br><span class="line">	// key: document name</span><br><span class="line">	// value: document contents</span><br><span class="line">	for each word w in value:</span><br><span class="line">		EmitIntermediate(w, &quot;1&quot;)</span><br><span class="line"></span><br><span class="line">reduce(String key, Iterator values):</span><br><span class="line">	// key: a word</span><br><span class="line">	// values: a list of counts</span><br><span class="line">	int result = 0;</span><br><span class="line">	for eash v in values:</span><br><span class="line">		result += ParseInt(v)</span><br><span class="line">	Emit(AsString(result))</span><br></pre></td></tr></table></figure>
+
+<p><code>Map</code> 函数输出文档中的每个词、以及这个词的出现次数(在这个简单的例子里就是 1)。<code>Reduce</code> 函数把 <code>Map</code> 函数产生的每一个特定的词出现的次数累加起来。</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><h3 id="执行过程"><a href="#执行过程" class="headerlink" title="执行过程"></a>执行过程</h3><p><img src="/images/map-reduce/figure1_execute_overview.png" alt="执行过程概览"></p>
+<p>图 1 展示了 <code>MapReduce</code> 的计算流程。当用户调用 <code>MapReduce</code> 函数时，将发生下面的一 系列动作（下面的序号和图 1 中的序号一一对应）： </p>
+<ol>
+<li><p>用户程序首先调用 <code>MapReduce</code> 库将输入文件分成 <code>M 个数据片度</code>，每个数据片段的大小一般从 <code>16MB 到 64MB</code>(可以通过可选的参数来控制每个数据片段的大小)。然后用户程序在机群中创建大量的程序副本。 </p>
+</li>
+<li><p>这些程序副本中的有一个特殊的程序–<code>master</code>。副本中其它的程序都是 <code>worker</code> 程序，由 <code>master</code> 分配 任务。有 <code>M 个 Map 任务</code>和 <code>R 个 Reduce 任务</code>将被分配，<code>master</code> 将一个 <code>Map</code> 任务或 <code>Reduce</code> 任务分配给一个空闲的 <code>worker</code>。 </p>
+</li>
+<li><p>被分配了 <code>Map</code> 任务的 <code>worker</code> 程序读取相关的输入数据片段，从输入的数据片段中解析出 <code>key/value pair</code>，然后把 <code>key/value pair</code> 传递给用户自定义的 <code>Map</code> 函数，由 <code>Map</code> 函数生成并输出的中间 <code>key/value pair</code>，并缓存在内存中。 </p>
+</li>
+<li><p>缓存中的 <code>key/value pair</code> 通过分区函数分成 <code>R</code> 个区域，之后周期性的写入到本地磁盘上。缓存的 <code>key/value pair</code> 在本地磁盘上的存储位置将被回传给 <code>master</code>，由 <code>master</code> 负责把这些存储位置再传送给 <code>Reduce worker</code>。</p>
+</li>
+<li><p>当 <code>Reduce worker</code> 程序接收到 <code>master</code> 程序发来的数据存储位置信息后，使用 <code>RPC</code> 从 <code>Map worker</code> 所在主机的磁盘上读取这些缓存数据。当 <code>Reduce worker</code> 读取了所有的中间数据后，通过对 <code>key</code> 进行排序，使得具有相同 <code>key</code> 值的数据聚合在一起。由于许多不同的 <code>key</code> 值会映射到相同的 <code>Reduce</code> 任务上， 因此必须进行排序。如果中间数据太大无法在内存中完成排序，那么就要在外部进行排序。 </p>
+</li>
+<li><p><code>Reduce worker</code> 程序遍历排序后的中间数据，对于每一个唯一的中间 <code>key</code> 值，<code>Reduce worker</code> 程序将这 个 <code>key</code> 值和它相关的中间 <code>value</code> 值的集合传递给用户自定义的 <code>Reduce</code> 函数。<code>Reduce</code> 函数的输出被追加到所属分区的输出文件。 </p>
+</li>
+<li><p>当所有的 <code>Map</code> 和 <code>Reduce</code> 任务都完成之后，<code>master</code> 唤醒用户程序。在这个时候，在用户程序里的对 <code>MapReduce</code> 调用才返回。</p>
+</li>
+</ol>
+<p>在成功完成任务之后<code>MapReduce</code> 的输出存放在 <code>R</code> 个输出文件中（对应每个 <code>Reduce</code> 任务产生一个输出文件，文件名由用户指定）。一般情况下，用户不需要将这 <code>R</code> 个输出文件合并成一个文件–他们经常把这些文 件作为另外一个 <code>MapReduce</code> 的输入，或者在另外一个可以处理多个分割文件的分布式应用中使用。</p>
+<p><span id="master维护的数据结构"/>在上述执行过程中，<code>master</code> 会记录每一个 <code>Map</code> 和 <code>Reduce</code> 任务的当前完成状态，以及所分配的 <code>worker</code>。除此之外，<code>Mmster</code> 还负责将 <code>Map</code> 产生的中间结果文件的位置和大小转发给 <code>Reduce</code>。</p>
+<h3 id="容错机制"><a href="#容错机制" class="headerlink" title="容错机制"></a>容错机制</h3><h4 id="worker-失效"><a href="#worker-失效" class="headerlink" title="worker 失效"></a>worker 失效</h4><p><code>master</code> 会周期性的 ping <code>worker</code>，如果 <code>worker</code> 没有及时返回信息，则 <code>master</code>会将其标记为失效。对于在该 <code>worker</code>上执行的任务，分为以下几种情况:</p>
+<ol>
+<li><p>已经完成的 <code>Map</code> 任务：由于 <code>Map</code> 任务的输出已经无法被访问，故该任务会被重置为空闲状态，后续将被安排给其他的 <code>worker</code>重新执行，并且<code>重新执行</code>的动作会通知给所有执行 <code>Reduce</code> 的 <code>worker</code>。任何还没有从失效 <code>worker</code>上读取数据的 <code>Reduce</code> 任务后续将从新的 <code>worker</code> 上读取。</p>
+</li>
+<li><p>已经完成的 <code>Reduce</code> 任务：由于<code>Reduce</code> 的输出结果会存储在全局文件系统上，故无需再次执行。</p>
+<blockquote>
+<p>该设定是基于 Google 的使用场景，Google 会将 Reduce 任务的输出结果放在 GFS 上，故无需担心数据丢失问题，如果将结果放在本地文件，则仍需要重新执行 Reduce 任务。</p>
+</blockquote>
+</li>
+<li><p>正在运行的 <code>Map</code> 和 <code>Reduce</code> 任务：将会被重置为空闲状态，等待重新调度。</p>
+</li>
+</ol>
+<h4 id="master-失效"><a href="#master-失效" class="headerlink" title="master 失效"></a>master 失效</h4><p><code>master</code> 会周期性的将其维护的数据结构(<a href="#master维护的数据结构">点击跳转</a>) 写入磁盘(即检查点 checkpoint)，当前 <code>master</code> 失效时，将会重新启动一个 <code>master</code> 并从检查点记录的状态继续执行。</p>
+<blockquote>
+<p>在 Google 内部的实现中，如果 master 失效，就中止 MapReduce 运算，由人工干预恢复 master 状态。</p>
+</blockquote>
+<h4 id="对于上述机制的讨论"><a href="#对于上述机制的讨论" class="headerlink" title="对于上述机制的讨论"></a>对于上述机制的讨论</h4><p>当用户定义的 <code>Map-Reduce</code> 函数都是确定性函数的时候，相同的输入具有相同的输出，所以重复执行具有相同的结果，上述容错机制最终都可以得到正确的结果。</p>
+<p>但当用户定义的 <code>Map-Reduce</code> 函数非确定性函数时，两个 <code>Reduce</code> 可能会输入来自两个不同 <code>Map</code>(但是 <code>Map</code> 函数的输入是相同的) 的结果，此时 <code>Reduce</code> 函数的输出可能会不同。</p>
+<h2 id="优化技巧"><a href="#优化技巧" class="headerlink" title="优化技巧"></a>优化技巧</h2><h3 id="存储与计算尽量在同一个节点"><a href="#存储与计算尽量在同一个节点" class="headerlink" title="存储与计算尽量在同一个节点"></a>存储与计算尽量在同一个节点</h3><p>为了减少数据拉取带来的网络开销，在 <code>Google</code> 的使用场景下，会结合 <code>GFS</code> 的存储，尽可能的将 <code>Map</code> 任务调度到文件存储所在的，或者相邻的服务器上。</p>
+<h3 id="增加任务数以平衡负载"><a href="#增加任务数以平衡负载" class="headerlink" title="增加任务数以平衡负载"></a>增加任务数以平衡负载</h3><p>前面提到，在计算过程将 <code>Map</code> 拆成 <code>M</code> 个，<code>Reduce</code> 拆成 <code>R</code> 个来执行，理想情况下 <code>M</code> 和 <code>R</code> 应当远远大于 <code>worker</code> 的数量，这样可以让每个 <code>worker</code> 都可以执行大量不同的任务来实现动态的负载均衡，也可以在某个 <code>worker</code> 生效，任务转移到其他 <code>worker</code> 时不会造成热点。</p>
+<p>但实际上需要考虑以下因素来限制 <code>M</code> 和 <code>R</code> 的值:</p>
+<ol>
+<li><code>master</code> 节点需要执行 $O(M+R)$ 次调度，并且需要在内存中保存 $O(M*R)$ 个状态</li>
+<li><code>R</code> 值需要用户指定，因为它是最终结果的文件数目</li>
+<li><code>M</code> 值的大小决定了每个 <code>Map</code> 输入数据的数据量，通常我们向让每个输入数据在 <code>16MB~64MB</code> 之间</li>
+</ol>
+<p>基于以上的原因，在 <code>Google</code> 的场景下，他们的 <code>M</code> <code>R</code> 与 <code>worker</code> 数量的比例一般为：$M=200000, R=5000, worker=2000$</p>
+<h3 id="处理落后任务"><a href="#处理落后任务" class="headerlink" title="处理落后任务"></a>处理落后任务</h3><p><code>Map-Reduce</code> 这样的分布式计算框架，最终受到<code>木桶效应</code> 的影响会很大，如果有个 <code>worker</code>由于 <code>CPU</code> <code>内存</code> <code>磁盘</code> 等因素的影响，导致执行速度缓慢，就会影响整个计算任务的进度。</p>
+<p>为了解决上述问题，在 <code>Map-Reduce</code> 操作接近完成的时候，<code>master</code>会调度备用任务(backup)进程来执行剩下的，处于处理中(in-progress)的任务，当备用任务处理完成或者是原始任务处理完成，都会将这个任务标记为完成。</p>
+<h3 id="自定义分区函数"><a href="#自定义分区函数" class="headerlink" title="自定义分区函数"></a>自定义分区函数</h3><p><code>Map</code> 任务执行完成后，<code>Map-Reduce</code> 框架会对<code>Map</code> 产生的 <code>key</code> 使用分区函数进行分区，以保证相同的 <code>key</code> 能够被分配到相同的 <code>Reduce</code> 任务，通常来说分区函数使用 <code>hash</code> 方法，比如 $hash(key) mod R$。但是对于某些场景，可能会有其他的分区需求，比如我们对 <code>URL</code> 进行统计时，如果我们想把相同域名的 <code>URL</code> 分到同一个 <code>Reduce</code> 任务，这时需要自定义分区函数。</p>
+<h3 id="Combiner-函数"><a href="#Combiner-函数" class="headerlink" title="Combiner 函数"></a>Combiner 函数</h3><p>在 <code>Map</code> 任务结束后，可能存在大量的重复 <code>key</code> 的 <code>key/value pair</code>，比如上述统计单词个数的任务，<code>Map</code> 结束后可能会出现大量 <code>the &lt;-&gt; 1</code> 这种 <code>key/value pair</code>。所有这些 <code>key/value pair</code> 都得通过网络发送给 <code>Reduce</code> 并由 <code>Reduce</code> 任务作累加。</p>
+<p>为了减小网络传输和 <code>Reduce</code> 任务的工作量， <code>Map-Reduce</code> 框架支持用户指定一个 <code>Combiner</code> 函数在 <code>Map</code> 任务执行结束后，对 <code>Map</code> 任务的结果先做一次预处理，以将相同的 <code>key</code> 值合并在一起。</p>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/weixinpay.jpg" alt="Andrewei 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.jpg" alt="Andrewei 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Andrewei
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://andrewei1316.github.io/2020/10/04/map-reduce/" title="MapReduce 总结">https://andrewei1316.github.io/2020/10/04/map-reduce/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2019/06/02/method-reference/" rel="prev" title="方法引用">
+      <i class="fa fa-chevron-left"></i> 方法引用
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/10/05/google-file-system/" rel="next" title="Google File System 总结">
+      Google File System 总结 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#MapReduce-%E6%A8%A1%E5%9E%8B"><span class="nav-number">2.</span> <span class="nav-text">MapReduce 模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E4%BE%8B%E5%AD%90"><span class="nav-number">2.1.</span> <span class="nav-text">一个例子</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.</span> <span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E8%BF%87%E7%A8%8B"><span class="nav-number">3.1.</span> <span class="nav-text">执行过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6"><span class="nav-number">3.2.</span> <span class="nav-text">容错机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#worker-%E5%A4%B1%E6%95%88"><span class="nav-number">3.2.1.</span> <span class="nav-text">worker 失效</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#master-%E5%A4%B1%E6%95%88"><span class="nav-number">3.2.2.</span> <span class="nav-text">master 失效</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%B9%E4%BA%8E%E4%B8%8A%E8%BF%B0%E6%9C%BA%E5%88%B6%E7%9A%84%E8%AE%A8%E8%AE%BA"><span class="nav-number">3.2.3.</span> <span class="nav-text">对于上述机制的讨论</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%98%E5%8C%96%E6%8A%80%E5%B7%A7"><span class="nav-number">4.</span> <span class="nav-text">优化技巧</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E4%B8%8E%E8%AE%A1%E7%AE%97%E5%B0%BD%E9%87%8F%E5%9C%A8%E5%90%8C%E4%B8%80%E4%B8%AA%E8%8A%82%E7%82%B9"><span class="nav-number">4.1.</span> <span class="nav-text">存储与计算尽量在同一个节点</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A2%9E%E5%8A%A0%E4%BB%BB%E5%8A%A1%E6%95%B0%E4%BB%A5%E5%B9%B3%E8%A1%A1%E8%B4%9F%E8%BD%BD"><span class="nav-number">4.2.</span> <span class="nav-text">增加任务数以平衡负载</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E8%90%BD%E5%90%8E%E4%BB%BB%E5%8A%A1"><span class="nav-number">4.3.</span> <span class="nav-text">处理落后任务</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%88%86%E5%8C%BA%E5%87%BD%E6%95%B0"><span class="nav-number">4.4.</span> <span class="nav-text">自定义分区函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Combiner-%E5%87%BD%E6%95%B0"><span class="nav-number">4.5.</span> <span class="nav-text">Combiner 函数</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Andrewei"
+      src="/images/header.jpg">
+  <p class="site-author-name" itemprop="name">Andrewei</p>
+  <div class="site-description" itemprop="description">There's no feat, but what we make.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">41</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/andrewei1316" title="GitHub → https://github.com/andrewei1316" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Andrewei</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'c104fbea1a954f68954e',
+      clientSecret: 'b436df6cf1fa320ed8747515f6137aa6f88f7417',
+      repo        : 'andrewei1316.github.io',
+      owner       : 'Andrewei1316',
+      admin       : ['Andrewei1316'],
+      id          : '35841479bfb87d837a192dc435350c08',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

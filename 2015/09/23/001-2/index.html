@@ -12,8 +12,10 @@
 
 <link rel="stylesheet" href="/css/main.css">
 
-
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monaco:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
 <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
@@ -24,7 +26,7 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="J2EE 利用 hibernate 与数据库交互入门">
 <meta property="og:url" content="https://andrewei1316.github.io/2015/09/23/001-2/index.html">
-<meta property="og:site_name" content="Andrewei">
+<meta property="og:site_name" content="Andrewei&#39;s Blog">
 <meta property="og:description" content="hibernate 简介 Hibernate是一个开放源代码的对象关系映射框架，它对JDBC进行了非常轻量级的对象封装，使得Java程序员可以随心所欲的使用对象编程思维来操纵数据库。 Hibernate可以应用在任何使用JDBC的场合，既可以在Java的客户端程序使用，也可以在Servlet&#x2F;JSP的Web应用中使用，最具革命意义的是，Hibernate可以在应用EJB的J2EE架构中取代CMP，">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://andrewei1316.github.io/images/2015/09/1.png">
@@ -67,7 +69,7 @@
   };
 </script>
 
-  <title>J2EE 利用 hibernate 与数据库交互入门 | Andrewei</title>
+  <title>J2EE 利用 hibernate 与数据库交互入门 | Andrewei's Blog</title>
   
 
 
@@ -98,7 +100,7 @@
   </style>
 </noscript>
 
-<link rel="alternate" href="/atom.xml" title="Andrewei" type="application/atom+xml">
+<link rel="alternate" href="/atom.xml" title="Andrewei's Blog" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
@@ -119,7 +121,7 @@
 
     <a href="/" class="brand" rel="start">
       <span class="logo-line-before"><i></i></span>
-      <h1 class="site-title">Andrewei</h1>
+      <h1 class="site-title">Andrewei's Blog</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
   </div>
@@ -222,7 +224,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="name" content="Andrewei's Blog">
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
@@ -348,10 +350,11 @@
 
 
       <footer class="post-footer">
+          
           <div class="post-tags">
-              <a href="/tags/j2ee/" rel="tag"># j2ee</a>
-              <a href="/tags/java/" rel="tag"># java</a>
-              <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag"># 数据库</a>
+              <a href="/tags/j2ee/" rel="tag"><i class="fa fa-tag"></i> j2ee</a>
+              <a href="/tags/java/" rel="tag"><i class="fa fa-tag"></i> java</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag"><i class="fa fa-tag"></i> 数据库</a>
           </div>
 
         
@@ -439,7 +442,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">32</span>
+          <span class="site-state-item-count">35</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -462,6 +465,9 @@
         <a href="https://github.com/andrewei1316" title="GitHub → https://github.com/andrewei1316" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
       </span>
   </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
 
 
 
@@ -483,13 +489,15 @@
 
 <div class="copyright">
   
-  &copy; 
+  &copy; 2015 – 
   <span itemprop="copyrightYear">2020</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
   <span class="author" itemprop="copyrightHolder">Andrewei</span>
 </div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
 
         
 <div class="busuanzi-count">
@@ -508,8 +516,6 @@
   </div>
 
   
-  
-  <script color='0,0,0' opacity='0.5' zIndex='-1' count='99' src="//cdn.jsdelivr.net/gh/theme-next/theme-next-canvas-nest@1/canvas-nest.min.js"></script>
   <script src="/lib/anime.min.js"></script>
   <script src="/lib/velocity/velocity.min.js"></script>
   <script src="/lib/velocity/velocity.ui.min.js"></script>

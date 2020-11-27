@@ -12,8 +12,10 @@
 
 <link rel="stylesheet" href="/css/main.css">
 
-
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monaco:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
 <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
@@ -22,9 +24,9 @@
 
   <meta name="description" content="There&#39;s no feat, but what we make.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Andrewei">
+<meta property="og:title" content="Andrewei&#39;s Blog">
 <meta property="og:url" content="https://andrewei1316.github.io/page/4/index.html">
-<meta property="og:site_name" content="Andrewei">
+<meta property="og:site_name" content="Andrewei&#39;s Blog">
 <meta property="og:description" content="There&#39;s no feat, but what we make.">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:author" content="Andrewei">
@@ -43,7 +45,7 @@
   };
 </script>
 
-  <title>Andrewei</title>
+  <title>Andrewei's Blog</title>
   
 
 
@@ -74,7 +76,7 @@
   </style>
 </noscript>
 
-<link rel="alternate" href="/atom.xml" title="Andrewei" type="application/atom+xml">
+<link rel="alternate" href="/atom.xml" title="Andrewei's Blog" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
@@ -95,7 +97,7 @@
 
     <a href="/" class="brand" rel="start">
       <span class="logo-line-before"><i></i></span>
-      <h1 class="site-title">Andrewei</h1>
+      <h1 class="site-title">Andrewei's Blog</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
   </div>
@@ -188,6 +190,266 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://andrewei1316.github.io/2015/10/05/codeforces-323div-2-c-gcd-table/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpg">
+      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="description" content="There's no feat, but what we make.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Andrewei's Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/10/05/codeforces-323div-2-c-gcd-table/" class="post-title-link" itemprop="url">Codeforces #323(div.2) C D题</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2015-10-05 15:11:30" itemprop="dateCreated datePublished" datetime="2015-10-05T15:11:30+08:00">2015-10-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2018-04-09 09:16:07" itemprop="dateModified" datetime="2018-04-09T09:16:07+08:00">2018-04-09</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%A2%98%E8%A7%A3/" itemprop="url" rel="index"><span itemprop="name">题解</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%A2%98%E8%A7%A3/Codeforces/" itemprop="url" rel="index"><span itemprop="name">Codeforces</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="C题（GCD-Table）"><a href="#C题（GCD-Table）" class="headerlink" title="C题（GCD Table）"></a>C题（GCD Table）</h2><p>题目链接: <a target="_blank" rel="noopener" href="http://codeforces.com/contest/583/problem/C">http://codeforces.com/contest/583/problem/C</a></p>
+<h3 id="题目大意"><a href="#题目大意" class="headerlink" title="题目大意:"></a>题目大意:</h3><p>定义 gcd 矩阵 b 为数组 a 中的元素两两求 GCD 得到， 即 b[i][j] = GCD(a[i], a[j]), 现给出数组 b 中所有数的乱序，求数组 a 中的元素，存在多种解时，给出任意一个解的任意一种排列。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2015/10/05/codeforces-323div-2-c-gcd-table/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://andrewei1316.github.io/2015/10/04/hdu-4821/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpg">
+      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="description" content="There's no feat, but what we make.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Andrewei's Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/10/04/hdu-4821/" class="post-title-link" itemprop="url">HDU 4821 字符串hash</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2015-10-04 00:08:51" itemprop="dateCreated datePublished" datetime="2015-10-04T00:08:51+08:00">2015-10-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2018-04-09 09:16:07" itemprop="dateModified" datetime="2018-04-09T09:16:07+08:00">2018-04-09</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%A2%98%E8%A7%A3/" itemprop="url" rel="index"><span itemprop="name">题解</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%A2%98%E8%A7%A3/HDU/" itemprop="url" rel="index"><span itemprop="name">HDU</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>题目链接：<a target="_blank" rel="noopener" href="http://acm.hdu.edu.cn/showproblem.php?pid=4821">http://acm.hdu.edu.cn/showproblem.php?pid=4821</a></p>
+<h3 id="题目大意"><a href="#题目大意" class="headerlink" title="题目大意:"></a>题目大意:</h3><p>给定一个字符串 S 问 S 中有几个字串可以满足如下条件：</p>
+<ol>
+<li>长度为 m * l;</li>
+<li>可以分为 m 个长度为 l 的字串，并且这些字串不完全相同；
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2015/10/04/hdu-4821/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://andrewei1316.github.io/2015/10/03/001-4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpg">
+      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="description" content="There's no feat, but what we make.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Andrewei's Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2015/10/03/001-4/" class="post-title-link" itemprop="url">利用 jquery.tablednd 插件实现表格拖动排序</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2015-10-03 19:12:56" itemprop="dateCreated datePublished" datetime="2015-10-03T19:12:56+08:00">2015-10-03</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2018-04-09 09:16:07" itemprop="dateModified" datetime="2018-04-09T09:16:07+08:00">2018-04-09</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/WEB%E6%8A%80%E6%9C%AF/" itemprop="url" rel="index"><span itemprop="name">WEB技术</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/WEB%E6%8A%80%E6%9C%AF/Javascript/" itemprop="url" rel="index"><span itemprop="name">Javascript</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>对表格进行拖动排序，自动编号等都可以通过 JS 来实现，tableDnd 是一个可以实现表格拖动排序的插件。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2015/10/03/001-4/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://andrewei1316.github.io/2015/10/03/001-3/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -197,7 +459,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="name" content="Andrewei's Blog">
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
@@ -284,7 +546,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="name" content="Andrewei's Blog">
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
@@ -430,7 +692,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">32</span>
+          <span class="site-state-item-count">35</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -453,6 +715,9 @@
         <a href="https://github.com/andrewei1316" title="GitHub → https://github.com/andrewei1316" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
       </span>
   </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
 
 
 
@@ -474,13 +739,15 @@
 
 <div class="copyright">
   
-  &copy; 
+  &copy; 2015 – 
   <span itemprop="copyrightYear">2020</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
   <span class="author" itemprop="copyrightHolder">Andrewei</span>
 </div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
 
         
 <div class="busuanzi-count">
@@ -499,8 +766,6 @@
   </div>
 
   
-  
-  <script color='0,0,0' opacity='0.5' zIndex='-1' count='99' src="//cdn.jsdelivr.net/gh/theme-next/theme-next-canvas-nest@1/canvas-nest.min.js"></script>
   <script src="/lib/anime.min.js"></script>
   <script src="/lib/velocity/velocity.min.js"></script>
   <script src="/lib/velocity/velocity.ui.min.js"></script>

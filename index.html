@@ -12,8 +12,10 @@
 
 <link rel="stylesheet" href="/css/main.css">
 
-
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monaco:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
 <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
@@ -22,9 +24,9 @@
 
   <meta name="description" content="There&#39;s no feat, but what we make.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Andrewei">
+<meta property="og:title" content="Andrewei&#39;s Blog">
 <meta property="og:url" content="https://andrewei1316.github.io/index.html">
-<meta property="og:site_name" content="Andrewei">
+<meta property="og:site_name" content="Andrewei&#39;s Blog">
 <meta property="og:description" content="There&#39;s no feat, but what we make.">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:author" content="Andrewei">
@@ -43,7 +45,7 @@
   };
 </script>
 
-  <title>Andrewei</title>
+  <title>Andrewei's Blog</title>
   
 
 
@@ -74,7 +76,7 @@
   </style>
 </noscript>
 
-<link rel="alternate" href="/atom.xml" title="Andrewei" type="application/atom+xml">
+<link rel="alternate" href="/atom.xml" title="Andrewei's Blog" type="application/atom+xml">
 </head>
 
 <body itemscope itemtype="http://schema.org/WebPage">
@@ -95,7 +97,7 @@
 
     <a href="/" class="brand" rel="start">
       <span class="logo-line-before"><i></i></span>
-      <h1 class="site-title">Andrewei</h1>
+      <h1 class="site-title">Andrewei's Blog</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
   </div>
@@ -188,6 +190,264 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://andrewei1316.github.io/2020/11/20/column-stores-vs-row-stores/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpg">
+      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="description" content="There's no feat, but what we make.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Andrewei's Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/11/20/column-stores-vs-row-stores/" class="post-title-link" itemprop="url">《Column-Stores vs. Row-Stores How Different Are They Really?》 阅读笔记</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-11-20 21:11:35" itemprop="dateCreated datePublished" datetime="2020-11-20T21:11:35+08:00">2020-11-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-11-27 21:47:11" itemprop="dateModified" datetime="2020-11-27T21:47:11+08:00">2020-11-27</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="摘要"><a href="#摘要" class="headerlink" title="摘要"></a>摘要</h2><p>本文主要讨论在 OLAP 领域，面向列的存储和计算为什么会比面向行的存储和计算更快的问题。</p>
+<p>在 OLAP 场景下，基准测试都会说面向列的存储和计算比面向行的存储和计算块一个数量级。而大家普遍理解面向列快的原因是</p>
+<blockquote>
+<p>column-stores are more I/O efﬁcient for read-only queries since they only have to read from disk (or from memory) those attributes accessed by a query.</p>
+<p>对于只读查询，列存储的I/O效率更高，因为它们只需要从磁盘(或内存)中读取查询所需要的那些字段。</p>
+</blockquote>
+<p>这种想法让大家认为即使是行存也可以通过一些优化手段，达到列存的性能，包括：</p>
+<ol>
+<li>垂直分表（vertically partitioning）</li>
+<li>全列索引（indexing every column）</li>
+</ol>
+<p>这些优化手段可以在查询时，只查询部分列对应的数据，从而加快分析速度。</p>
+<p>通过一系列实验不难发现，这些手段并不能让面向行存打到列存的性能，原因是列存除了存储优势外，在计算上还有以下几种优化手段：</p>
+<ol>
+<li>压缩（Compression）</li>
+<li>延迟物化（Late Materialization）</li>
+<li>快迭代（Block Iteration）</li>
+<li>Invisible Join</li>
+</ol>
+<p>前三种手段是目前面向列的系统中已有的优化手段，最后一种是本文新提出的一种策略，后面的章节会详细介绍。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/11/20/column-stores-vs-row-stores/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://andrewei1316.github.io/2020/10/05/google-file-system/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpg">
+      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="description" content="There's no feat, but what we make.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Andrewei's Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/10/05/google-file-system/" class="post-title-link" itemprop="url">Google File System 总结</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-10-05 16:52:25" itemprop="dateCreated datePublished" datetime="2020-10-05T16:52:25+08:00">2020-10-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-11-19 21:22:30" itemprop="dateModified" datetime="2020-11-19T21:22:30+08:00">2020-11-19</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>本文是博主学习 <code>MIT6.824</code> 课程的学习笔记，其中会总结论文知识点并加入自己的理解，内容可能与论文原文有出入，想要了解细节的读者可以阅读论文原文或者学习 <code>MIT6.824</code>课程。</p>
+<p><a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/papers/gfs.pdf">The Google File System</a></p>
+<p><a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/video/3.html">GFS MIT Video</a></p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p><code>Google File System</code> 简称 <code>GFS</code> 是 <code>Google</code> 设计并实现的一个面向数据密集型应用的、可伸缩的分布式文件系统。</p>
+<p><code>GFS</code> 的设计基于以下使用场景:</p>
+<ol>
+<li>运行在廉价的日用硬件上，组件失效是常态事件。因此，系统必须具有持久的监控、错误侦测、容错以及自动恢复的功能。</li>
+<li>以存储大文件（<code>100MB</code> 到 <code>数GB</code>）为主，同时要支持小文件，但是不需要针对小文件做优化。</li>
+<li>支持两种读操作：大规模的流式读取（<code>数百KB</code>，或者一次读取 <code>1MB</code>  甚至更多）和小规模的随机读取（在任意位移上读取 <code>几个KB</code>）。</li>
+<li>支持两种写操作：大规模的、顺序的对文件的追加和小规模的任意位置写入（不必高效）。</li>
+<li>必须支持高效的多客户端同时并行追加数据到同一个文件的语义（<code>Google</code> 的场景下，<code>GFS</code> 中存储的文件通常用于 <code>生产者-消费者</code> 队列，或者其他多路文件合并操作）</li>
+<li>大吞吐量优先于低延时</li>
+</ol>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/10/05/google-file-system/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://andrewei1316.github.io/2020/10/04/map-reduce/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpg">
+      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="description" content="There's no feat, but what we make.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Andrewei's Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/10/04/map-reduce/" class="post-title-link" itemprop="url">MapReduce 总结</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-10-04 13:13:12" itemprop="dateCreated datePublished" datetime="2020-10-04T13:13:12+08:00">2020-10-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-11-19 21:22:30" itemprop="dateModified" datetime="2020-11-19T21:22:30+08:00">2020-11-19</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>本文是博主学习 <code>MIT6.824</code> 课程的学习笔记，其中会总结论文知识点并加入自己的理解，内容可能与论文原文有出入，想要了解细节的读者可以阅读论文原文或者学习 <code>MIT6.824</code>课程。</p>
+<p><a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/papers/mapreduce.pdf">MapReduce: Simplified Data Processing on Large Clusters</a></p>
+<p><a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/video/1.html">Introduction And MapReduce</a></p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p><code>MapReduce</code> 是一种编程模型，也是一个处理和生成超大数据集算法模型的相关实现。使用 <code>MapReduce</code> 架构的程序能够在大量的普通配置的计算机上实现并行化处理。</p>
+<h2 id="MapReduce-模型"><a href="#MapReduce-模型" class="headerlink" title="MapReduce 模型"></a>MapReduce 模型</h2><p><code>MapReduce</code> 编程模型的处理过程为：输入一个 <code>key/value pair</code> 集合，经过处理后，输出一个 <code>key/value pair</code> 集合作为结果。<br><code>MapReduce</code> 允许用户使用两个函数 <code>Map</code> 和 <code>Reduce</code> 来表达上述计算。</p>
+<ul>
+<li><code>Map</code> 函数接受一个输入的 <code>key/value pair</code> 值，然后产生一个中间 <code>key/value pair</code> 值的集合。<code>MapReduce</code> 把所有 <code>key</code> 为 <code>I</code> 的中间值 <code>value</code>集合在一起后传递给 <code>reduce</code> 函数。</li>
+<li><code>Reduce</code> 函数接受一个中间 <code>key</code> 的值 <code>I</code> 和其<code>value</code>值的集合，由于 <code>value</code> 值可能由于太大无法放入内存中，故通常我们把 <code>value</code> 的迭代器传递给 <code>Reduce</code> 函数。</li>
+</ul>
+<p>上述过程也可以抽象为下面的表达式</p>
+<p>$$ map(k1, v1) -&gt; list(k2, v2) $$</p>
+<p>$$ reduce(k2, list(v2)) -&gt; list(v2) $$</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/10/04/map-reduce/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://andrewei1316.github.io/2019/06/02/method-reference/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -197,7 +457,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="name" content="Andrewei's Blog">
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
@@ -277,7 +537,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="name" content="Andrewei's Blog">
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
@@ -374,7 +634,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="name" content="Andrewei's Blog">
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
@@ -466,7 +726,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="name" content="Andrewei's Blog">
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
@@ -555,7 +815,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="name" content="Andrewei's Blog">
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
@@ -636,7 +896,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="name" content="Andrewei's Blog">
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
@@ -728,7 +988,7 @@
     </span>
 
     <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="name" content="Andrewei's Blog">
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
@@ -781,269 +1041,6 @@
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2016/07/05/binary-indexed-trees/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://andrewei1316.github.io/2016/06/07/cplusplus-virtual-function/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/header.jpg">
-      <meta itemprop="name" content="Andrewei">
-      <meta itemprop="description" content="There's no feat, but what we make.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Andrewei">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2016/06/07/cplusplus-virtual-function/" class="post-title-link" itemprop="url">C++虚函数与多态性</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2016-06-07 12:06:56" itemprop="dateCreated datePublished" datetime="2016-06-07T12:06:56+08:00">2016-06-07</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2018-04-09 09:16:07" itemprop="dateModified" datetime="2018-04-09T09:16:07+08:00">2018-04-09</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/" itemprop="url" rel="index"><span itemprop="name">编程语言</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80/C/" itemprop="url" rel="index"><span itemprop="name">C++</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h3 id="写在前面"><a href="#写在前面" class="headerlink" title="写在前面"></a>写在前面</h3><p>本文转自 <a target="_blank" rel="noopener" href="http://www.cppblog.com/dawnbreak/archive/2009/03/10/76084.aspx">http://www.cppblog.com/dawnbreak/archive/2009/03/10/76084.aspx</a> 感谢作者<br>总觉得C++很神奇，在继承和多态性方面比JAVA要灵活的许多，今天看到了上面这个介绍虚函数的文章觉得写的很好，分享到这里。</p>
-<hr>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2016/06/07/cplusplus-virtual-function/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://andrewei1316.github.io/2016/05/05/sublime-input-Chinese/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/header.jpg">
-      <meta itemprop="name" content="Andrewei">
-      <meta itemprop="description" content="There's no feat, but what we make.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Andrewei">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2016/05/05/sublime-input-Chinese/" class="post-title-link" itemprop="url">解决ubuntu下sublime中无法输入中文的问题</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2016-05-05 20:11:39" itemprop="dateCreated datePublished" datetime="2016-05-05T20:11:39+08:00">2016-05-05</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2018-04-09 09:16:07" itemprop="dateModified" datetime="2018-04-09T09:16:07+08:00">2018-04-09</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/%E8%BD%AF%E4%BB%B6/" itemprop="url" rel="index"><span itemprop="name">软件</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/%E8%BD%AF%E4%BB%B6/sublime/" itemprop="url" rel="index"><span itemprop="name">sublime</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>sublime是一款非常好用的代码编辑器, 支持多种语言的语法高亮, 支持多种插件拓展, 但是最近在使用sublime写博客的时候发现, 不能在里面输入中文, 特地找了一波方法, 现整理如下:</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2016/05/05/sublime-input-Chinese/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://andrewei1316.github.io/2016/04/27/ubuntu-install-deb/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/header.jpg">
-      <meta itemprop="name" content="Andrewei">
-      <meta itemprop="description" content="There's no feat, but what we make.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Andrewei">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2016/04/27/ubuntu-install-deb/" class="post-title-link" itemprop="url">ubuntu 安装 deb 的方法</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2016-04-27 21:12:15" itemprop="dateCreated datePublished" datetime="2016-04-27T21:12:15+08:00">2016-04-27</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2018-04-09 09:16:07" itemprop="dateModified" datetime="2018-04-09T09:16:07+08:00">2018-04-09</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
-                </span>
-                  ，
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux/%E8%BD%AF%E4%BB%B6/" itemprop="url" rel="index"><span itemprop="name">软件</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>ubuntu 安装 deb 软件包的方法有两种</p>
-<ol>
-<li>直接双击 deb 文件, 此时会自动调用系统的软件中心然后根据提示进行安装</li>
-<li>作为程序员当然要用一种逼格高的方法来解决这个问题——用命令行来安装。ubuntu 下可以使用 dpkg 命令来安装, 下面是 dpkg 常用的几个命令:
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2016/04/27/ubuntu-install-deb/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1134,7 +1131,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">32</span>
+          <span class="site-state-item-count">35</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1157,6 +1154,9 @@
         <a href="https://github.com/andrewei1316" title="GitHub → https://github.com/andrewei1316" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
       </span>
   </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
 
 
 
@@ -1178,13 +1178,15 @@
 
 <div class="copyright">
   
-  &copy; 
+  &copy; 2015 – 
   <span itemprop="copyrightYear">2020</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
   <span class="author" itemprop="copyrightHolder">Andrewei</span>
 </div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
 
         
 <div class="busuanzi-count">
@@ -1203,8 +1205,6 @@
   </div>
 
   
-  
-  <script color='0,0,0' opacity='0.5' zIndex='-1' count='99' src="//cdn.jsdelivr.net/gh/theme-next/theme-next-canvas-nest@1/canvas-nest.min.js"></script>
   <script src="/lib/anime.min.js"></script>
   <script src="/lib/velocity/velocity.min.js"></script>
   <script src="/lib/velocity/velocity.ui.min.js"></script>

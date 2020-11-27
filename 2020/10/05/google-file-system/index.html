@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monaco:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"andrewei1316.github.io","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="本文是博主学习 MIT6.824 课程的学习笔记，其中会总结论文知识点并加入自己的理解，内容可能与论文原文有出入，想要了解细节的读者可以阅读论文原文或者学习 MIT6.824课程。 The Google File System GFS MIT Video 简介Google File System 简称 GFS 是 Google 设计并实现的一个面向数据密集型应用的、可伸缩的分布式文件系统。 GFS">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Google File System 总结">
+<meta property="og:url" content="https://andrewei1316.github.io/2020/10/05/google-file-system/index.html">
+<meta property="og:site_name" content="Andrewei&#39;s Blog">
+<meta property="og:description" content="本文是博主学习 MIT6.824 课程的学习笔记，其中会总结论文知识点并加入自己的理解，内容可能与论文原文有出入，想要了解细节的读者可以阅读论文原文或者学习 MIT6.824课程。 The Google File System GFS MIT Video 简介Google File System 简称 GFS 是 Google 设计并实现的一个面向数据密集型应用的、可伸缩的分布式文件系统。 GFS">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://andrewei1316.github.io/images/gfs/figure1_gfs_architecture.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/gfs/table1_file_region_state_after_mutation.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/gfs/figure1_gfs_architecture.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/gfs/figure2_write_control_and_data_flow.png">
+<meta property="article:published_time" content="2020-10-05T08:52:25.000Z">
+<meta property="article:modified_time" content="2020-11-19T13:22:30.704Z">
+<meta property="article:author" content="Andrewei">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://andrewei1316.github.io/images/gfs/figure1_gfs_architecture.png">
+
+<link rel="canonical" href="https://andrewei1316.github.io/2020/10/05/google-file-system/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Google File System 总结 | Andrewei's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Andrewei's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Andrewei's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/andrewei1316" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://andrewei1316.github.io/2020/10/05/google-file-system/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpg">
+      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="description" content="There's no feat, but what we make.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Andrewei's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Google File System 总结
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-10-05 16:52:25" itemprop="dateCreated datePublished" datetime="2020-10-05T16:52:25+08:00">2020-10-05</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-11-19 21:22:30" itemprop="dateModified" datetime="2020-11-19T21:22:30+08:00">2020-11-19</time>
+              </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本文是博主学习 <code>MIT6.824</code> 课程的学习笔记，其中会总结论文知识点并加入自己的理解，内容可能与论文原文有出入，想要了解细节的读者可以阅读论文原文或者学习 <code>MIT6.824</code>课程。</p>
+<p><a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/papers/gfs.pdf">The Google File System</a></p>
+<p><a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/video/3.html">GFS MIT Video</a></p>
+<h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p><code>Google File System</code> 简称 <code>GFS</code> 是 <code>Google</code> 设计并实现的一个面向数据密集型应用的、可伸缩的分布式文件系统。</p>
+<p><code>GFS</code> 的设计基于以下使用场景:</p>
+<ol>
+<li>运行在廉价的日用硬件上，组件失效是常态事件。因此，系统必须具有持久的监控、错误侦测、容错以及自动恢复的功能。</li>
+<li>以存储大文件（<code>100MB</code> 到 <code>数GB</code>）为主，同时要支持小文件，但是不需要针对小文件做优化。</li>
+<li>支持两种读操作：大规模的流式读取（<code>数百KB</code>，或者一次读取 <code>1MB</code>  甚至更多）和小规模的随机读取（在任意位移上读取 <code>几个KB</code>）。</li>
+<li>支持两种写操作：大规模的、顺序的对文件的追加和小规模的任意位置写入（不必高效）。</li>
+<li>必须支持高效的多客户端同时并行追加数据到同一个文件的语义（<code>Google</code> 的场景下，<code>GFS</code> 中存储的文件通常用于 <code>生产者-消费者</code> 队列，或者其他多路文件合并操作）</li>
+<li>大吞吐量优先于低延时</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="GFS-架构"><a href="#GFS-架构" class="headerlink" title="GFS 架构"></a>GFS 架构</h2><p><img src="/images/gfs/figure1_gfs_architecture.png" alt="图一：GFS 结构图"></p>
+<p>一个 <code>GFS</code> 集群包含一个单独的 <code>Master</code> 节点和多台 <code>Chunk Server</code>，并且同时被多个（几百个）客户端同时访问。</p>
+<blockquote>
+<p>单独的 <code>Master</code> 节点并不是集群中只有一个可以成为 <code>Master</code> 的服务器，只是说在任意时刻只能有一个节点的角色为 <code>Master</code>，当这个节点挂掉时，会有新的 <code>Master</code> 节点起作用。</p>
+</blockquote>
+<p><code>GFS</code> 存储的文件都被分割成固定大小的 <code>Chunk</code>，每个 <code>Chunk</code> 在被创建的时候，会由 <code>Master</code> 分配一个不变的、全球唯一的 64 位 <code>Chunk</code> 标识。<code>Chunk Server</code>把 <code>Chunk</code> 以 <code>linux</code> 普通文件的形式保存在本地硬盘上，并且根据指定的 <code>Chunk</code> 标识和字节范围来读写块数据。同时为了可靠性，每个块会被复制多份，存储在不同的 <code>Chunk Server</code>上（通常是 3 份）</p>
+<blockquote>
+<p>副本同时可以在大规模读取的时候起到负载均衡的作用</p>
+</blockquote>
+<p><code>Master</code> 节点管理着整个文件系统，主要涉及以下几个方面：</p>
+<ol>
+<li><p>整个文件系统的元数据：包括命名空间（namespace）、访问控制信息（access control information）、文件与<code>Chunk Server</code>的映射关系以及每个 <code>Chunk</code>  的当前位置（the current locations of chunks）</p>
+</li>
+<li><p>文件系统的动态信息：<code>Chunk</code> 租用管理（chunk leases management）、孤儿 <code>Chunk</code> 的回收（garbage collection of orphaned chunks）以及<code>Chunk</code> 在 <code>Chunk Server</code> 之间的迁移</p>
+</li>
+<li><p>使用心跳周期性与每个 <code>Chunk Server</code>通信，发送至指令到各个 <code>Chunk Server</code>并接受 <code>Chunk Server</code>的状态信息</p>
+</li>
+<li><p>接受并回应客户端的操作请求</p>
+</li>
+</ol>
+<p><code>GFS</code> 客户端代码实现了 <code>GFS</code> 文件系统的 <code>API</code> 接口函数调用、与 <code>Master</code> 节点和 <code>Chunk Server</code>通信以及数据进行读写等操作。</p>
+<p>鉴于整个系统只有一个 <code>Master</code> 节点，为了防止 <code>Master</code> 节点成为瓶颈，客户端与 <code>Master</code> 节点的通信只获取元数据，所有的数据操作都是客户端直接和 <code>Chunk Server</code>进行交互的，同时客户端会将从 <code>Master</code> 拿到的元数据缓存一段时间。另外无论是客户端还是 <code>Chunk Server</code>都不需要缓存文件数据。</p>
+<h2 id="元数据"><a href="#元数据" class="headerlink" title="元数据"></a>元数据</h2><p><code>Master</code> 服务器存储 3 种主要类型的元数据：</p>
+<ol>
+<li>文件和 <code>Chunk</code> 的命名空间（namespace）</li>
+<li>文件和 <code>Chunk</code> 的映射关系</li>
+<li>每个 <code>Chunk</code> 的存放位置</li>
+</ol>
+<p>上述元数据信息都保存在 <code>Master</code> 服务器的内存中，这使得 <code>Master</code> 节点对元数据变更变得极为容易，<code>Master</code> 可以在后台简单、高效的周期性扫描自己保存的全部状态信息，以实现 <code>Chunk</code> 垃圾收集、<code>Chunk Server</code> 失效时重新复制数据、<code>Chunk Server</code> 的负载均衡以及磁盘使用情况统计等。唯一有风险的是，元数据放在内存中可能会使得集群能管理的 <code>Chunk</code> 数会受限于 <code>Master</code> 的内存大小。但从论文来看，<code>Google</code> 并没有遇到这个问题，因为 <code>64MB</code>的 <code>Chunk</code> 只会占用 <code>64B</code> 的 <code>Master</code> 内存，并且在 <code>Google</code> 的场景中，大多数 <code>Chunk</code> 都是被填充满的。</p>
+<blockquote>
+<p>每个 <code>Chunk</code> 被设计为 <code>64MB</code> 大小，主要出于一下考虑：</p>
+<ol>
+<li>减少了元数据的数量从而减少了客户端与 <code>Master</code> 的交互频率（每个 <code>Chunk</code> 覆盖了更多的数据范围 &amp;&amp; 客户端可以缓存更多数据的元数据信息）</li>
+<li>每个 <code>Chunk</code> 覆盖较大的数据范围，客户端可以对同一个 <code>Chunk</code> 进行比较多的操作，可以通过 <code>TCP</code> 长连接与 <code>Chunk Server</code>交互，减少网络开销</li>
+<li>减少元数据的数量可以减少 <code>Master</code> 的内存压力</li>
+</ol>
+<p>但相对的，Chunk 较大也会引入一些问题，比如小文件只有一个 <code>Chunk</code>，对其操作时会造成热点。对于这个问题，论文中给出的缓解方式为：</p>
+<ol>
+<li>这样的 <code>Chunk</code> 配置较多的副本，分担读取压力</li>
+<li>尽可能不要同时对这个 <code>Chunk</code> 进行操作</li>
+</ol>
+<p>或者可以实现读取时，客户端之间可以共享数据。</p>
+</blockquote>
+<p>为了防止 <code>Master</code> 节点崩溃造成状态丢失，对于 <strong>文件和Chunk的命名空间</strong> 以及 <strong>文件和Chunk的映射关系</strong> 这两种元数据，会按照修改时间以操作日志(Operation Log)的形式持久化在本地硬盘，同时复制到其他 <code>Master</code> 节点。并且对于一个更改上述元数据的客户端请求，只有当本地和其他 <code>Master</code> 节点都把 <code>操作日志</code> 持久化到硬盘后，才会响应客户端。</p>
+<p><code>Master</code> 会在 <code>操作日志</code> 增长到一定量时，对系统状态做一次 <code>Checkpoint</code>，当 <code>Master</code> 启动时，只需要从最近的 <code>Checkpoint</code> 状态启动并重演 <code>Checkpoint</code> 之后有限的 <code>操作日志</code>就可以恢复到奔溃前的状态。</p>
+<p><strong>每个 Chunk 的存放位置</strong> 并不会被持久化，<code>Master</code> 服务器只是在启动的时候轮询 <code>Chunk服务器</code> 以获取这些信息，并且会周期性的通过心跳信息监控 <code>Chunk Server</code> 的状态。这种设计简化了当 <code>Chunk Server</code> 加入集群、离开集群、更改名称、失效以及重启时的数据变更问题。</p>
+<h2 id="一致性模型"><a href="#一致性模型" class="headerlink" title="一致性模型"></a>一致性模型</h2><p><code>GFS</code> 提供了相对宽松的一致性，在支撑高度分布式的同时，保持了相对简单切容易实现的优点。</p>
+<h3 id="一致性保障机制"><a href="#一致性保障机制" class="headerlink" title="一致性保障机制"></a>一致性保障机制</h3><p>由于整个文件系统的元数据都存储在 <code>Master</code> 节点的内存中，所以文件命名空间的修改（比如文件的创建）可以通过 <code>Master</code> 的锁来保障原子性和正确性。同时，<code>Master</code> 节点的 <code>操作日志</code> 定义了这些操作在全局的顺序。</p>
+<p><code>GFS</code> 定义了一些概念，来标识文件修改后的状态：</p>
+<ol>
+<li>如果所有的客户端，无论从哪个副本（replica）读取，读到的数据都相同，我们称 <code>文件region</code> 是<strong>一致的（Consistent）</strong></li>
+<li>相反，如果存在任意两个客户端，从某些副本（replica）读取，读到的数据不相同，我们称 <code>文件region</code> 是<strong>不一致的（Consistent）</strong></li>
+<li>对于<strong>一致的文件 region</strong>，如果每个客户端都能读取到它上次修改的内容，我们称 <code>文件region</code> 是 <strong>确定的（Defined）</strong></li>
+</ol>
+<blockquote>
+<p>这里的<strong>一致</strong>、<strong>确定</strong> 是从客户端的角度来理解的：</p>
+<ol>
+<li>10 个客户端同时 <code>GET</code> 修改后的数据发现每个客户端获取到的数据都相同，就称为 <code>一致</code></li>
+<li>10 个客户端同时执行了 <strong>不同</strong> 的修改操作（例如，修改的是文件的不同部分，不会发生重叠），然后 <code>GET</code> 修改后的数据，发现每个客户端获取到的数据都相同（此时已经可以称为 <code>一致</code> 状态），且跟自己修改后的预期相同，故客户端可以 <strong>确定</strong> 自己的修改成功了，故称之为 <code>确定的</code>。</li>
+<li>10 个客户端同时执行了 <strong>不同</strong> 的修改操作（例如，修改的是文件的相同部分，会发生重叠），然后 <code>GET</code> 修改后的数据，发现每个客户端获取到的数据都相同（此时已经可以称为 <code>一致</code> 状态），但是客户端发现获取到的数据跟自己修改后的预期不同，此时客户端的角度无法知道结果是否正确，故称之为<code>不确定</code> 状态。</li>
+</ol>
+</blockquote>
+<p>对于数据修改后的 <code>文件region</code>，它的状态取决于操作类型、成功与否以及是否同步修改，下面我们结合论文给出的表格，以及论文原文描述分情况讨论几种情况。</p>
+<blockquote>
+<p>对于 region 的定义论文中没有提到，猜测是修改操作涉及到的文件范围</p>
+</blockquote>
+<p><img src="/images/gfs/table1_file_region_state_after_mutation.png" alt="表1：文件region修改后的状态"></p>
+<p><strong>随机写（Write）</strong></p>
+<blockquote>
+<p> A write causes data to be written at an application-specified file offset.</p>
+</blockquote>
+<p>由论文原文可知，随机写是由客户端来指定写入位置的，所以无论是否存在重试，写入的位置和内容都相同。</p>
+<ol>
+<li><p>并行写入</p>
+<p>由论文 <code>3.1 Leases and Mutation Order</code> 一节可知，并行写入时，写入的顺序是由 <code>Chunk</code> 的 <code>Master</code> 来指定的，并且所有的副本写入顺序都一致。所以只要最后都成功写入，<code>Chunk</code> 的所有副本的内容就一定是相同的，即状态为 <code>一致的</code>。但由于各个客户端写入的范围可能存在重叠，故会存在 <code>不确定</code> 的情况。</p>
+<p>例如某个 <code>Chunk</code> 的原始内容如下</p>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+<th>8</th>
+<th>9</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>内容</td>
+<td>a</td>
+<td>b</td>
+<td>c</td>
+<td>d</td>
+<td>e</td>
+<td>f</td>
+<td>g</td>
+<td>h</td>
+<td>i</td>
+<td>j</td>
+</tr>
+</tbody></table>
+<p>此时 <code>客户端1</code> 需要改写 <code>[0, 3]</code> 范围内的数据为 <code>0</code>，<code>客户端2</code> 需要改写 <code>[2, 5]</code> 范围内的数据为 <code>1</code>。</p>
+<ol>
+<li>若写入顺序为 <code>客户端1</code> 、<code>客户端2</code> ，则写入完成后，<code>Chunk</code> 内容变为</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+<th>8</th>
+<th>9</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>内容</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>g</td>
+<td>h</td>
+<td>i</td>
+<td>j</td>
+</tr>
+</tbody></table>
+<ol start="2">
+<li>若写入顺序为 <code>客户端2</code>、<code>客户端1</code>，则写入完成后，<code>Chunk</code> 内容变为</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+<th>8</th>
+<th>9</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>内容</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>g</td>
+<td>h</td>
+<td>i</td>
+<td>j</td>
+</tr>
+</tbody></table>
+<p>除了上述讨论的情况外，论文 <code>3.1 Leases and Mutation Order</code> 一节中还提到，如果某次写操作横跨多个 <code>Chunk</code>，则会将这个写操作分开，分别在每个 <code>Chunk</code> 中进行。由于写入顺序的控制在 <code>Chunk</code> 级别，所以有可能 <code>Chunk1</code> 的写入顺序为 <code>客户端1</code>、<code>客户端2</code>，而 <code>Chunk2</code> 中的顺序为 <code>客户端2</code> 、<code>客户端1</code>。这种情况会更加糟糕。</p>
+</li>
+<li><p>顺序成功</p>
+<p>顺序成功意味着同一时刻，只有一个客户端在写入，写入完成后可以读取到自己预期的数据，即状态为 <code>确定的</code></p>
+</li>
+<li><p>写入失败</p>
+<p>当 <code>Chunk</code> 的某些副本写入成功，但是另外一些副本写入失败时，就会陷入 <code>不一致</code> 状态。</p>
+</li>
+</ol>
+<p><strong>追加写（Append Records）</strong></p>
+<blockquote>
+<p>A record append causes data (the “record”) to be appended atomically at least once even in the presence of concurrent mutations, but at an offset of GFS’s choosing (Section 3.3). (In contrast, a “regular” append is merely a write at an offset that the client believes to be the current end of file.) The offset is returned to the client and marks the beginning of a defined region that contains the record. In addition, GFS may insert padding or record duplicates in between. They occupy regions considered to be inconsistent and are typically dwarfed by the amount of user data.</p>
+</blockquote>
+<p>由论文原文可知，<code>GFS</code> 为追加写操作的几个特点：</p>
+<ol>
+<li>追加写操作为 <code>原子性</code> 操作（即不会出现交叉写的情况）</li>
+<li>追加写操作的 <code>offset</code> 由 <code>GFS</code> 指定（准确的说是被选为 <code>primary</code> 的 <code>Chunk</code> 指定）</li>
+<li>追加写操作失败时，<code>GFS</code> 会重试，此时 <code>GFS</code> 可能会插入一些 <code>padding</code> 或者会有一些重复数据</li>
+</ol>
+<p>我们仍然举例来说明此时可能出现的状态，由于写操作的 <code>原子性</code>，我们将 <code>并发追加</code> 和 <code>顺序追加</code> 合并在一起讨论</p>
+<ol>
+<li><p>并发成功、顺序成功</p>
+<p>由于追加写为原子性的，所以客户端数据不可能出现重叠，即每个客户端在写入之后都能获取到预期的数据，是 <code>确定的</code> 状态。</p>
+<p>当客户端出现重试操作时，考虑下面的情况，某个 <code>Chunk</code> 共存在 3 个副本</p>
+<p><strong>Chunk1（primary）</strong>   </p>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>内容</td>
+<td>a</td>
+<td>b</td>
+<td>c</td>
+</tr>
+</tbody></table>
+<p><strong>Chunk2</strong></p>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>内容</td>
+<td>a</td>
+<td>b</td>
+<td>c</td>
+</tr>
+</tbody></table>
+<p><strong>Chunk3</strong></p>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>内容</td>
+<td>a</td>
+<td>b</td>
+<td>c</td>
+</tr>
+</tbody></table>
+<p>此时，客户端请求追加写操作，追加内容为 <code>123</code>，如果 <code>Chunk1</code> 成功但是 <code>Chunk2</code> 失败了，则 <code>Chunk</code> 内容变为</p>
+<p><strong>Chunk1（primary）</strong>  </p>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>内容</td>
+<td>a</td>
+<td>b</td>
+<td>c</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+</tr>
+</tbody></table>
+<p><strong>Chunk2</strong></p>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>内容</td>
+<td>a</td>
+<td>b</td>
+<td>c</td>
+<td>1</td>
+<td>2</td>
+</tr>
+</tbody></table>
+<p><strong>Chunk3</strong></p>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>内容</td>
+<td>a</td>
+<td>b</td>
+<td>c</td>
+</tr>
+</tbody></table>
+<p>客户端感知到错误后，开始发起重试，由于追加写的 <code>offset</code> 由 <code>primary</code> 指定，所以 <code>Chunk1</code>将会指定此次追加写操作从 <code>offset = 6</code> 开始。<code>Chunk2</code> 和 <code>Chunk3</code> 会填充特殊字符使其文件尾 <code>offset</code>与 <code>primary</code> 一致。  </p>
+<p><strong>Chunk1（primary）</strong> </p>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+<th>8</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>内容</td>
+<td>a</td>
+<td>b</td>
+<td>c</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+</tr>
+</tbody></table>
+<p><strong>Chunk2</strong></p>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+<th>8</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>内容</td>
+<td>a</td>
+<td>b</td>
+<td>c</td>
+<td>1</td>
+<td>2</td>
+<td>-</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+</tr>
+</tbody></table>
+<p><strong>Chunk3</strong></p>
+<table>
+<thead>
+<tr>
+<th>位置</th>
+<th>0</th>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+<th>5</th>
+<th>6</th>
+<th>7</th>
+<th>8</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>内容</td>
+<td>a</td>
+<td>b</td>
+<td>c</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+</tr>
+</tbody></table>
+<p>对于客户端来说，<code>GFS</code> 会使用一些检查和重复校验，使得客户端获取到的数据为 <code>确定的</code>（祥见论文 <code>2.7.2 Implications for Applications</code> 小节）。</p>
+<p>但是对于真实的 <code>Chunk</code> 副本来说，确实出现了 <code>不一致</code>。</p>
+</li>
+<li><p>写入失败</p>
+<p>写入失败同随机写入一样，会造成 <code>不一致</code> 的状态。</p>
+</li>
+</ol>
+<h3 id="程序实现"><a href="#程序实现" class="headerlink" title="程序实现"></a>程序实现</h3><p>基于 <code>GFS</code> 的特点，<code>GFS</code> 建议使用它的应用程序尽量使用以下技术来获得最佳实践：</p>
+<ol>
+<li>尽量采用追加写入操作</li>
+<li>Checkpoint</li>
+<li>自验证写入操作</li>
+<li>自标识记录</li>
+</ol>
+<p>在追加写入所有数据之后，应用程序自动将文件改名为一个永久保存的文件名，或者周期性的作 <code>Checkpoint</code>，记录成功写入了多少数据。 <code>Checkpoint</code> 文件可以包含程序级别的校验和。<code>Readers</code> 仅校验并处理上个 <code>Checkpoint</code> 之后产生的文件内容，这些文件内容的状态一定是已定义的。这个方法满足了我们一致性和并发处理的要求。追加写入比随机位置写入更加有效率，对应用程序的失败处理更具有弹性。 <code>Checkpoint</code> 可以让 <code>Writer</code> 以渐进的方式重新开始，并且可以防止 <code>Reader</code> 处理已经被成功写入，但是从应用程序的角度来看还并未完成的数 据。<code>Readers</code> 使用下面的方法来处理偶然性的填充数据和重复内容。<code>Writers</code> 在每条写入的记录中都 包含了额外的信息，例如 <code>Checksum</code>，用来验证它的有效性。<code>Reader</code> 可以利用 <code>Checksum</code> 识别和抛弃额外的填充数据和记录片段。如果应用不能容忍偶尔的重复内容，可以用记录的唯一标识符来过滤它们。</p>
+<h2 id="GFS-中的常见操作"><a href="#GFS-中的常见操作" class="headerlink" title="GFS 中的常见操作"></a>GFS 中的常见操作</h2><h3 id="读取"><a href="#读取" class="headerlink" title="读取"></a>读取</h3><p><img src="/images/gfs/figure1_gfs_architecture.png" alt="图一：GFS 结构图"></p>
+<p>客户端在读取 <code>GFS</code> 中的数据时，过程如下</p>
+<ol>
+<li>客户端把文件名称和指定的字节偏移，根据 <code>Chunk</code> 的大小，转换成文件的 <code>Chunk</code> 标识</li>
+<li>客户端把文件名称和 <code>Chunk</code> 标识发送给 <code>Master</code> 节点</li>
+<li><code>Master</code> 节点将相应 <code>Chunk</code> 标识的副本位置信息返回给客户端</li>
+<li>客户端以文件名称和 <code>Chunk</code> 标识为 <code>key</code> 缓存这些信息</li>
+<li>客户端发送读取请求（其中包含了 <code>Chunk</code> 标识和字节范围）到最近的 <code>Chunk</code> 副本处。</li>
+</ol>
+<h3 id="租约（lease）"><a href="#租约（lease）" class="headerlink" title="租约（lease）"></a>租约（lease）</h3><p><code>GFS</code> 使用租约 （lease）机制来保持多个副本间变更顺序的一致性。<code>Master</code> 节点为 <code>Chunk</code> 的某个副本建立一个租约，这个副本被称为 <code>主Chunk（primary）</code>。<code>主Chunk</code> 对 <code>Chunk</code> 的所有更改操作进行排序，所有的副本都遵从这个序列进行修改操作。因此，修改操作全局的顺序首先由 <code>Master</code> 节点选择的租约的顺序决定，然后由租约中 <code>主Chunk</code> 分配的序列号决定。</p>
+<p>租约可以减小 <code>Master</code> 节点的负担，并且租约的默认有效时间为 <code>60s</code>，在此期间 <code>主Chunk</code> 可以通过在与 <code>Master</code> 的心跳中附加信息来申请延长租期。<code>Master</code> 也可以提前取消租约，亦或者在 <code>主Chunk</code>失联且租约过期后，与其他的 <code>Chunk</code> 副本签订新的租约。</p>
+<h3 id="写入操作"><a href="#写入操作" class="headerlink" title="写入操作"></a>写入操作</h3><p> <img src="/images/gfs/figure2_write_control_and_data_flow.png" alt="图2：写入和数据流"></p>
+<p>写入操作的过程如下：</p>
+<ol>
+<li>客户机向 <code>Master</code> 节点询问哪一个 <code>Chunk Server</code>持有当前的租约，以及其它副本的位置。如果没有一个 <code>Chunk</code> 持有租约，<code>Master</code> 节点就选择其中一个副本建立一个租约（这个步骤在图上没有显示）。</li>
+<li><code>Master</code> 节点将 <code>主Chunk</code> 的标识符以及其它副本（又称为 <code>secondary副本</code>、二级副本）的位置返回给客户端。客户机缓存这些数据以便后续的操作。只有在 <code>主Chunk</code> 不可用，或者 <code>主Chunk</code> 回复信息表明它已不再持有租约的时候，客户端才需要重新跟 <code>Master</code> 节点联系。</li>
+<li>客户端把数据推送到所有的副本上。客户端可以以任意的顺序推送数据。<code>Chunk Server</code>接收到数据并保存在它的内部 <code>LRU缓存</code> 中，一直到数据被使用或者过期交换出去。由于数据流的网络传输负载非常高，通过分离数据流和控制流，我们可以基于网络拓扑情况对数据流进行规划，提高系统性能，而不用去理会哪个 <code>Chunk Server</code>保存了 <code>主Chunk</code>。</li>
+<li>当所有的副本都确认接收到了数据，客户端发送写请求到 <code>主Chunk</code> 服务器。这个请求标识了早前推送到所有副本的数据。<code>主Chunk</code> 为接收到的所有操作分配连续的序列号，这些操作可能来自不同的客户端，序列号保证了操作顺序执行。它以序列号的顺序把操作应用到它自己的本地状态中。</li>
+<li><code>主Chunk</code> 把写请求传递到所有的二级副本。每个二级副本依照 <code>主Chunk</code> 分配的序列号以相同的顺序执行这些操作。</li>
+<li>所有的二级副本回复 <code>主Chunk</code>，它们已经完成了操作。</li>
+<li><code>主Chunk</code> 服务器回复客户端。任何副本产生的任何错误都会返回给客户端。在出现错误的情况下，写入操作可能在 <code>主Chunk</code> 和一些二级副本执行成功。（如果操作在主Chunk 上失败了，操作就不会被分配序列号，也不会被传递。）客户端的请求被确认为失败，被修改的region处于不一致的状态。客户端代码通过重复执行失败的操作来处理这样的错误。在从头开始重复执行之前，客户机会先从步骤（3）到步骤（7）做几次尝试。</li>
+</ol>
+<p>如果写入的数据量很大，跨域了多个 <code>Chunk</code> ，客户端会将其分成多个写操作。</p>
+<p>由于数据推送需要消耗大量的网络带宽，客户端在推送数据的时候，会沿着一个 <code>Chunk Server</code>链顺序的推送，而不是以其它拓扑形式分散推送（例如，树型拓扑结构）。线性推送模式下，每台机器所有的出口带宽都用于以最快的速度传输数据，而不是在多个接受者之间分配带宽。</p>
+<p>同时，利用基于 <code>TCP</code> 连接的、管道式数据推送的方式来让延长最小化，<code>Chunk Server</code>接收到数据后，马上开始向前推送。</p>
+<h3 id="追加写入"><a href="#追加写入" class="headerlink" title="追加写入"></a>追加写入</h3><p>追加写入与上文提到的覆盖写入过程基本一致：</p>
+<ol>
+<li>客户端只需要指定要追加的数据，写入的偏移量由 <code>GFS</code> 来决定</li>
+<li>客户端把数据推送完毕后，向 <code>主Chunk</code> 发送写入请求</li>
+<li><code>主Chunk</code> 会首先检查当前的追加操作是否超出了 <code>Chunk</code> 的最大尺寸（64MB）<ol>
+<li>如果超出则 <code>主Chunk</code> 会首先将当前的 <code>Chunk</code> 填充到最佳尺寸，然后通知所有 <code>二级副本</code> 做相同的操作，最后回复客户端要求其对下一个 <code>Chunk</code> 继续进行追加操作</li>
+<li>如果没有超出，则 <code>主Chunk</code> 将数据追加到自己的副本内，再通知 <code>二级副本</code> 写在跟 <code>主Chunk</code> 相同的位置上</li>
+</ol>
+</li>
+</ol>
+<p>关于追加失败的场景，前面讲 <code>一致性模型</code> 时已经提到，不再在此赘述。</p>
+<h3 id="快照"><a href="#快照" class="headerlink" title="快照"></a>快照</h3><p>快照使用 <code>Copy-on-Write</code> 技术，当 <code>Master</code> 节点收到一个快照请求时：</p>
+<ol>
+<li>取消作快照文件的所有租约。这样就保证了，后续与这些文件有关的操作，都必须先请求 <code>Master</code> 节点（参考前面提到的写入流程）</li>
+<li>等租约撤回后，<code>Master</code> 首先会将这个操作以日志的形式记录到磁盘，然后开始在内存中复制相关文件或者目录的元数据，这些元数据指向相同的 <code>Chunk</code></li>
+<li>当客户端第一次查询 <code>Chunk C</code>  的 <code>primary</code> 以及副本位置，想要做写入操作时，<code>Master</code> 发现指向 <code>Chunk C</code> 的引用计数超过了 <code>1</code>。此时 <code>Master</code> 不会马上响应客户端的请求，而是首先创建一个 <code>Chunk C</code> 的新 <code>handle</code>，并要求每个拥有 <code>Chunk C</code> 的服务器在本地复制一个相同的 <code>Chunk C</code>，之后在新创建出的 <code>Chunk C</code> 中选择一个签订租约，并将信息返回给客户端</li>
+</ol>
+<h3 id="命名空间和锁"><a href="#命名空间和锁" class="headerlink" title="命名空间和锁"></a>命名空间和锁</h3><p>为了能允许客户端并发操作，<code>Master</code> 会使用命名空间上的锁来保证操作的正确性。</p>
+<p>与传统的文件系统不同，<code>GFS</code> 没有维护一个目录树，也不支持文件或者目录的链接（<code>unix</code> 中的符号链接）。在逻辑上，<code>GFS</code> 的名称空间就是一个全路径和元数据映射关系的查找表。利用前缀压缩，这个表可以高效的存储在内存中。在存储名称空间的树型结构上，每个节点（绝对路径的文件名或绝对路径的目录名）都有一个关联的读写锁。</p>
+<p>每个 <code>Master</code> 节点的操作在开始之前都要获得一系列的锁。通常情况下，如果一个操作涉及 <code>/d1/d2/…/dn/leaf</code>，那么操作首先要获得目录 <code>/d1，/d1/d2，…，/d1/d2/…/dn</code> 的读锁，以及 <code>/d1/d2/…/dn/leaf</code> 的读写锁。注意，根据操作的不同，<code>leaf</code> 可以是 一个文件，也可以是一个目录。</p>
+<p>为了优化锁占用的内存，读写锁采用惰性分配的方式，且不再使用的时候会被及时回收。</p>
+<p>锁的获取也要依据一个全局一致的顺序来避免死锁：首先按名称空间的层次排序，在同一个层次内按字典顺序排序。</p>
+<h3 id="副本"><a href="#副本" class="headerlink" title="副本"></a>副本</h3><h4 id="位置"><a href="#位置" class="headerlink" title="位置"></a>位置</h4><p>副本位置的选择主要遵循两个目标：</p>
+<ol>
+<li>最大化数据可靠性和可用性</li>
+<li>最大化网络带宽利用率</li>
+</ol>
+<p>而仅仅在多台机器上存储副本只能保证硬盘损坏或者机器失效带来的影响，以及最大化每台机器的带宽利用率。所以必须要在多个机架见分布存储 <code>Chunk</code> 副本。</p>
+<h4 id="创建、复制和负载均衡"><a href="#创建、复制和负载均衡" class="headerlink" title="创建、复制和负载均衡"></a>创建、复制和负载均衡</h4><p>除去读写之外，副本主要还有三个操作：创建、重新复制和负载均衡（迁移）</p>
+<p><strong>创建</strong></p>
+<p>创建副本时，要选择在什么地方放置空的副本，<code>Master</code> 在选择时主要考虑下面几个因素：</p>
+<ol>
+<li>优先考虑硬盘使用率低于平均水平的服务器</li>
+<li>保证每个服务器上最近创建的 <code>Chunk</code> 不要过多，因为 <code>Chunk</code> 创建意味着接下来会有大量的写入和查询。</li>
+<li>如上文所说，倾向于分布在不同的机架上</li>
+</ol>
+<p><strong>复制</strong></p>
+<p>当 <code>Chunk</code> 副本由于以下几个可能的原因，导致副本数量小于用户指定的复制因数的时候，<code>Master</code> 节点就会重新复制它：</p>
+<ol>
+<li><code>Chunk Server</code>不可用</li>
+<li><code>Chunk Server</code>报告它所存储的一个副本损坏</li>
+<li><code>Chunk Server</code>的一块磁盘不可用</li>
+<li><code>Chunk</code> 副本的复制参数被增加</li>
+</ol>
+<p>当多个 <code>Chunk</code> 需要被复制时，优先级会考虑以下因素</p>
+<ol>
+<li>当前副本数与复制因数的差值，差值越大优先级越高</li>
+<li>优先复制未被删除的 <code>Chunk</code> （删除是惰性的，会被定时回收，下文有介绍）</li>
+<li>优先复制会阻塞客户端查询处理流程的</li>
+</ol>
+<p>复制时， <code>Master</code> 会 “命令” 拥有相应 <code>Chunk</code> 副本的 <code>Chunk Server</code>上克隆一个副本出来，并按照 <code>Chunk</code> 创建时的策略选择副本位置。</p>
+<p>为了防止克隆时产生的流量影响客户端的操作，<code>Master</code> 对整个集群和每个 <code>Chunk Server</code>上同时进行克隆操作的数量做了限制，并且 <code>Chunk Server</code>通过调节它对源 <code>Chunk Server</code>读请求的频率来限制它用于克隆操作的带宽。</p>
+<p><strong>重新负载均衡</strong></p>
+<p><code>Master</code> 服务器周期性地检查当前的副本分布情况，然后移动副本以便更好的利用硬盘空间、更有效的进行负载 均衡。而且在这个过程中，<code>Master</code> 服务器逐渐的填满一个新的 <code>Chunk Server</code>，而不是在短时间内用新的 <code>Chunk</code> 填满它，以至于过载。新副本的存储位置选择策略和上面讨论的相同。另外，<code>Master</code> 节点必须选择哪个副本要被移走。通常情况，<code>Master</code> 节点移走那些剩余空间低于平均值的 <code>Chunk</code> 服务 器上的副本，从而平衡系统整体的硬盘使用率。</p>
+<h3 id="垃圾回收"><a href="#垃圾回收" class="headerlink" title="垃圾回收"></a>垃圾回收</h3><p><code>GFS</code> 使用惰性删除策略来处理文件删除操作。</p>
+<p>文件删除的流程为：</p>
+<ol>
+<li><code>Master</code> 节点立即将删除操作写入操作日志中</li>
+<li>把文件名改为一个包含删除时间戳的隐藏的名字</li>
+<li>当 <code>Master</code> 对文件系统命名空间做常规扫描时删除所有三天前的隐藏文件</li>
+</ol>
+<p>在真正删除隐藏文件之前，被客户端删除的文件都可以通过更改文件名的方式回滚删除操作。文件的元数据也是在删除隐藏文件时被删除的。</p>
+<p><code>Master</code> 在对 <code>Chunk</code> 名字空间做类似的常规扫描时，<code>Master</code> 节点找到孤儿 <code>Chunk</code>（不被任何文件包含的 <code>Chunk</code>）并删除它们的元数据。 <code>Chunk Server</code>在和 <code>Master</code> 节点交互的心跳信息中，报告它拥有的 <code>Chunk</code> 子集的信息，<code>Master</code> 节点回复 <code>Chunk Server</code>哪些 <code>Chunk</code> 在 <code>Master</code> 节点保存的元数据中已经不存在了。<code>Chunk Server</code>可以任意删除这些 <code>Chunk</code> 的副本。</p>
+<p>惰性删除的优势：</p>
+<ol>
+<li>对于组件失效是常态的大规模分布式系统，垃圾回收方式简单可靠。<code>Chunk</code> 可能在某些 <code>Chunk Server</code>创建成功，某些 <code>Chunk Server</code>上创建失败，失败的副本处于无法被 <code>Master</code> 节点识别的状态。副本删除消息可能丢失，<code>Master</code> 节点必须重新发送失败的删除消息，包括自身的和 <code>Chunk</code>服务器的 。 垃圾回收提供了一致的、可靠的清除无用副本的方法。</li>
+<li>垃圾回收把存储空间的回收操作合并到 <code>Master</code> 节点规律性的后台活动中。因此，操作被批量的执行，开销会被分散。另外，垃圾回收在<code>Master</code> 节点相对空闲的时候完成。这样 <code>Master</code> 节点就可以给那些需要快速反应的客户机请求提供更快捷的响应。</li>
+<li>延缓存储空间回收为意外的、不可逆转的删除操作提供了安全保障。</li>
+</ol>
+<p>当然，延迟回收可能会造成空间的浪费，特别是当磁盘空间紧张或者客户端频繁创建、删除新文件的时候。对于这个问题，可以通过显式的再次删除一个已经被删除文件的方式来加速回收空间。另外 <code>GFS</code> 允许为命名空间的不同部分设置不同的复制参数和回收策略，比如可以指定某些目录下不做复制，删除时立即回收空间。</p>
+<h3 id="失效副本检测"><a href="#失效副本检测" class="headerlink" title="失效副本检测"></a>失效副本检测</h3><p><code>Master</code> 在每次跟 <code>Chunk</code> 签订租约时增加 <code>Chunk</code> 版本号，然后通知最新副本，只有当 <code>Master</code> 和所有副本都将新的版本号持久化存储后，才会响应客户端的请求。</p>
+<p>当一个 <code>Chunk Server</code>在更新版本号时失效，在它重启向 <code>Master</code> 报告当前副本状态时，<code>Master</code> 就会检测出它包含过期 <code>Chunk</code>。相反如果 <code>Master</code> 发现他记录的版本号比自己要高，则会更新自己的版本号到最新版本。（<strong>此处 Master 会更新自己的 Chunk 吗？</strong>）</p>
+<p>客户端请求 <code>Master</code> 节点 <code>Chunk</code> 信息时，对于已经过期的 <code>Chunk</code>，<code>Master</code> 会直接认为不存在。另外，<code>Master</code> 节点在通知客户端哪个 <code>Chunk Server</code>持有租约、或者指示 <code>Chunk Server</code>从哪个 <code>Chunk Server</code>进行克隆时，消息中都附带了 <code>Chunk</code> 的版本号。客户端或者 <code>Chunk Server</code>在执行操作时都会验证版本号以确保总是访问当前版本的数据。</p>
+<h2 id="容错和诊断"><a href="#容错和诊断" class="headerlink" title="容错和诊断"></a>容错和诊断</h2><p>由于 <code>GFS</code> 在设计之初的目标为运行在廉价的日用硬件上，组件的频繁失效是一种常态，所以容错和诊断是 <code>GFS</code> 设计时非常重要的一部分。</p>
+<h3 id="高可用"><a href="#高可用" class="headerlink" title="高可用"></a>高可用</h3><p><code>GFS</code> 使用两条简单的策略保证系统的高可用性：快速恢复和复制。</p>
+<h4 id="快速恢复"><a href="#快速恢复" class="headerlink" title="快速恢复"></a>快速恢复</h4><p><code>Master</code> 节点和 <code>Chunk Server</code> 的状态都保存在本地，无论是正常的重启还是异常的重启都可以快速的恢复到之前的状态。</p>
+<h4 id="Master-的复制"><a href="#Master-的复制" class="headerlink" title="Master 的复制"></a>Master 的复制</h4><p><code>Master</code> 的所有操作日志和 <code>Checkpoint</code> 文件都被复制到多台机器上。并且凡是涉及更改 <code>Master</code> 状态的操作，一定会确保操作日志写入到 <code>Master</code> 和复制机器的磁盘上才会响应客户端的请求。客户端使用规范的别名（例如 gfs-master）访问 <code>Master</code>，一旦当前 <code>Master</code> 节点不可用，<code>GFS</code> 系统外部的监控进程会在其它的存有完整操作日志的机器上启动一个新的 <code>Master</code>进程，并将别名指向新的 <code>Master</code> 节点。</p>
+<p><code>GFS</code> 中还有一些 <code>Shadow Master</code> 节点，他们在 <code>Master</code> 宕机期间可以临时提供文件系统的只读访问，由于 <code>Shadow Master</code> 的元数据比 <code>Master</code> 节点更新慢（通常不到 1s），所以通过 <code>Shadow Master</code> 读取文件内容时，有可能读取到过期数据。</p>
+<p><code>Shadow Master</code> 服务器为通过读取正在进行操作的日志副本来保持自身状态是最新的，它依照和主 <code>Master</code> 服务器完全相同的顺序来更改内部的数据结构。<code>Shadow Master</code> 服务器在启动的时候也会从 <code>Chun Server</code> 轮询数据（之后定期拉数据），数据中包括了 <code>Chunk</code> 副本的位置信息；<code>Shadow Master</code> 服务器也会定期和 <code>Chunk Server</code> 通信以确定它们的状态。在主 <code>Master</code> 服务器因创建和删除副本导致副本位置信息更新时，<code>Shadow Master</code> 服务器才和主 <code>Master</code> 服务器通信来更新自身状态。</p>
+<h4 id="Chunk-的复制"><a href="#Chunk-的复制" class="headerlink" title="Chunk 的复制"></a>Chunk 的复制</h4><p>每个 <code>Chunk</code> 都被复制到不同机架上的不同的 <code>Chunk Server</code> 上。用户可以为文件命名空间的不同部分设定不同的复制级别。缺省是 3。当有<code>Chunk Server</code> 离线了，或者通过 <code>Chksum校验</code> 发现了已经损坏的数据，<code>Master</code> 节点通过克隆已有的副本保证每个 <code>Chunk</code> 都被完整复制。</p>
+<h3 id="数据完整性"><a href="#数据完整性" class="headerlink" title="数据完整性"></a>数据完整性</h3><p><code>Chunk Server</code> 会把每个 <code>Chunk Replica</code> 切分为若干个 64KB 大小的块，并为每个块计算 32 位校验和。和 <code>Master</code> 的元数据一样，这些校验和会被保存在 <code>Chunk Server</code> 的内存中，每次修改前都会用先写日志的形式来保证可用。当 <code>Chunk Server</code> 接收到读请求时，<code>Chunk Server</code> 首先会利用校验和检查所需读取的数据是否有发生损坏，如此一来 <code>Chunk Server</code> 便不会把损坏的数据传递给其他请求发送者，无论它是客户端还是另一个 <code>Chunk Server</code>。发现损坏后，<code>Chunk Server</code> 会为请求发送者发送一个错误，并向 <code>Master</code> 告知数据损坏事件。接收到错误后，请求发送者会选择另一个 <code>Chunk Server</code> 重新发起请求，而 <code>Master</code> 则会利用另一个 <code>Replica</code> 为该 <code>Chunk</code> 进行重备份。当新的 <code>Replica</code> 创建完成后，<code>Master</code> 便会通知该 <code>Chunk Server</code> 删除这个损坏的 <code>Replica</code>。</p>
+<p>当进行数据追加操作时，<code>Chunk Server</code> 可以为位于 <code>Chunk</code> 尾部的校验和块的校验和进行增量式的更新，或是在产生了新的校验和块时为其计算新的校验和。即使是被追加的校验和块在之前已经发生了数据损坏，增量更新后的校验和依然会无法与实际的数据相匹配，在下一次读取时依然能够检测到数据的损坏。在进行数据写入操作时，<code>Chunk Server</code> 必须读取并校验包含写入范围起始点和结束点的校验和块，然后进行写入，最后再重新计算校验和。</p>
+<p>除外，在空闲的时候，<code>Chunk Server</code> 也会周期地扫描并校验不活跃的 <code>Chunk Replica</code> 的数据，以确保某些 <code>Chunk Replica</code> 即使在不怎么被读取的情况下，其数据的损坏依然能被检测到，同时也确保了这些已损坏的 <code>Chunk Replica</code> 不至于让 <code>Master</code> 认为该 <code>Chunk</code> 已有足够数量的 <code>Replica</code>。</p>
+<h2 id="FAQ"><a href="#FAQ" class="headerlink" title="FAQ"></a>FAQ</h2><p>MIT 6.824 的课程材料中给出了和 GFS 有关的 FAQ，以下是相关问答的翻译。</p>
+<blockquote>
+<p>Q：为什么原子记录追加操作是至少一次（At Least Once），而不是确定一次（Exactly Once）？</p>
+</blockquote>
+<p>要让追加操作做到确定一次是不容易的，因为如此一来 Primary 会需要保存一些状态信息以检测重复的数据，而这些信息也需要复制到其他服务器上，以确保 Primary 失效时这些信息不会丢失。在 Lab 3 中你会实现确定一次的行为，但用的是比 GFS 更复杂的协议（Raft）。</p>
+<blockquote>
+<p>Q：应用怎么知道 Chunk 中哪些是填充数据或者重复数据？</p>
+</blockquote>
+<p>要想检测填充数据，应用可以在每个有效记录之前加上一个魔数（Magic Number）进行标记，或者用校验和保证数据的有效性。应用可通过在记录中添加唯一 ID 来检测重复数据，这样应用在读入数据时就可以利用已经读入的 ID 来排除重复的数据了。GFS 本身提供了 library 来支撑这些典型的用例。</p>
+<blockquote>
+<p>Q：考虑到原子记录追加操作会把数据写入到文件的一个不可预知的偏移值中，客户端该怎么找到它们的数据？</p>
+</blockquote>
+<p>追加操作（以及 GFS 本身）主要是面向那些会完整读取文件的应用的。这些应用会读取所有的记录，所以它们并不需要提前知道记录的位置。例如，一个文件中可能包含若干个并行的网络爬虫获取的所有链接 URL。这些 URL 在文件中的偏移值是不重要的，应用只会想要完整读取所有 URL。</p>
+<blockquote>
+<p>Q：如果一个应用使用了标准的 POSIX 文件 API，为了使用 GFS 它会需要做出修改吗？</p>
+</blockquote>
+<p>答案是需要的，不过 GFS 并不是设计给已有的应用的，它主要面向的是新开发的应用，如 MapReduce 程序。</p>
+<blockquote>
+<p>Q：GFS 是怎么确定最近的 Replica 的位置的？</p>
+</blockquote>
+<p>论文中有提到 GFS 是基于保存 Replica 的服务器的 IP 地址来判断距离的。在 2003 年的时候，Google 分配 IP 地址的方式应该确保了如果两个服务器的 IP 地址在 IP 地址空间中较为接近，那么它们在机房中的位置也会较为接近。</p>
+<blockquote>
+<p>Q：Google 现在还在使用 GFS 吗？</p>
+</blockquote>
+<p>Google 仍然在使用 GFS，而且是作为其他如 BigTable 等存储系统的后端。由于工作负载的扩大以及技术的革新，GFS 的设计在这些年里无疑已经经过大量调整了，但我并不了解其细节。HDFS 是公众可用的对 GFS 的设计的一种效仿，很多公司都在使用它。</p>
+<blockquote>
+<p>Q：Master 不会成为性能瓶颈吗？</p>
+</blockquote>
+<p>确实有这个可能，GFS 的设计者也花了很多心思来避免这个问题。例如，Master 会把它的状态保存在内存中以快速地进行响应。从实验数据来看，对于大文件读取（GFS 主要针对的负载类型），Master 不是瓶颈所在；对于小文件操作以及目录操作，Master 的性能也还跟得上（见 6.2.4 节）。</p>
+<blockquote>
+<p>Q：GFS 为了性能和简洁而牺牲了正确性，这样的选择有多合理呢？</p>
+</blockquote>
+<p>这是分布式系统领域的老问题了。保证强一致性通常需要更加复杂且需要机器间进行更多通信的协议（正如我们会在接下来几门课中看到的那样）。通过利用某些类型的应用可以容忍较为松懈的一致性的事实，人们就能够设计出拥有良好性能以及足够的一致性的系统。例如，GFS 对 MapReduce 应用做出了特殊优化，这些应用需要的是对大文件的高读取效率，还能够容忍文件中存在数据空洞、重复记录或是不一致的读取结果；另一方面，GFS 则不适用于存储银行账号的存款信息。</p>
+<blockquote>
+<p>Q：如果 Master 失效了会怎样？</p>
+</blockquote>
+<p>GFS 集群中会有持有 Master 状态完整备份的 Replica Master；通过论文中没有提到的某个机制，GFS 会在 Master 失效时切换到其中一个 Replica（见 5.1.3 节）。有可能这会需要一个人类管理者的介入来指定一个新的 Master。无论如何，我们都可以确定集群中潜伏着一个故障单点，理论上能够让集群无法从 Master 失效中进行自动恢复。我们会在后面的课程中学习如何使用 Raft 协议实现可容错的 Master。</p>
+<h3 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h3><p>除了 FAQ，课程还要求学生在阅读 GFS 的论文后回答一个问题，问题如下：</p>
+<blockquote>
+<p>Describe a sequence of events that result in a client reading stale data from the Google File System</p>
+<p>描述一个事件序列，使得客户端会从 Google File System 中读取到过时的数据</p>
+</blockquote>
+<p>通过查阅论文，不难找到两处答案：由失效后重启的 Chunk Server + 客户端缓存的 Chunk 位置数据导致客户端读取到过时的文件内容（见 4.5 和 2.7.1 节），和由于 Shadow Master 读取到的过时文件元信息（见 5.1.3 节）。以上是保证所有写入操作都成功时客户端可能读取到过时数据的两种情况 —— 如果有写入操作失败，数据会进入<strong>不确定</strong>的状态，自然客户端也有可能读取到过时或是无效的数据。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>论文的第六章为 <code>GFS</code> 的 <code>Benchmark</code> ，第七章为 <code>GFS</code> 在生产环境使用时遇到的一些问题，本文没有总结，有兴趣的读者可以阅读论文原文。</p>
+<p>基于 <code>Google File System </code> 开发的 <code>HDFS</code> 一直是分布式文件系统开源实现的首选。本篇论文与 <code>Map Reduce</code> 是大数据的开山之作，与 <code>Big Table</code> 并称为 <code>Google</code> 的三驾马车，是非常经典的论文，值得不断的学习和推敲。 </p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ol>
+<li><p><a target="_blank" rel="noopener" href="https://pdos.csail.mit.edu/6.824/papers/gfs-faq.txt">GFS FAQ</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://blog.wonter.net/posts/aa8a2f6c/">MIT 6.824（二）GFS的一致性模型</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://mr-dai.github.io/gfs/">Google File System 总结</a></p>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/weixinpay.jpg" alt="Andrewei 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.jpg" alt="Andrewei 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Andrewei
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://andrewei1316.github.io/2020/10/05/google-file-system/" title="Google File System 总结">https://andrewei1316.github.io/2020/10/05/google-file-system/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/10/04/map-reduce/" rel="prev" title="MapReduce 总结">
+      <i class="fa fa-chevron-left"></i> MapReduce 总结
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/11/20/column-stores-vs-row-stores/" rel="next" title="《Column-Stores vs. Row-Stores How Different Are They Really?》 阅读笔记">
+      《Column-Stores vs. Row-Stores How Different Are They Really?》 阅读笔记 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#GFS-%E6%9E%B6%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">GFS 架构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%83%E6%95%B0%E6%8D%AE"><span class="nav-number">3.</span> <span class="nav-text">元数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7%E6%A8%A1%E5%9E%8B"><span class="nav-number">4.</span> <span class="nav-text">一致性模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%80%E8%87%B4%E6%80%A7%E4%BF%9D%E9%9A%9C%E6%9C%BA%E5%88%B6"><span class="nav-number">4.1.</span> <span class="nav-text">一致性保障机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E5%AE%9E%E7%8E%B0"><span class="nav-number">4.2.</span> <span class="nav-text">程序实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#GFS-%E4%B8%AD%E7%9A%84%E5%B8%B8%E8%A7%81%E6%93%8D%E4%BD%9C"><span class="nav-number">5.</span> <span class="nav-text">GFS 中的常见操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%BB%E5%8F%96"><span class="nav-number">5.1.</span> <span class="nav-text">读取</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A7%9F%E7%BA%A6%EF%BC%88lease%EF%BC%89"><span class="nav-number">5.2.</span> <span class="nav-text">租约（lease）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99%E5%85%A5%E6%93%8D%E4%BD%9C"><span class="nav-number">5.3.</span> <span class="nav-text">写入操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%BD%E5%8A%A0%E5%86%99%E5%85%A5"><span class="nav-number">5.4.</span> <span class="nav-text">追加写入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BF%AB%E7%85%A7"><span class="nav-number">5.5.</span> <span class="nav-text">快照</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4%E5%92%8C%E9%94%81"><span class="nav-number">5.6.</span> <span class="nav-text">命名空间和锁</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%AF%E6%9C%AC"><span class="nav-number">5.7.</span> <span class="nav-text">副本</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BD%8D%E7%BD%AE"><span class="nav-number">5.7.1.</span> <span class="nav-text">位置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E3%80%81%E5%A4%8D%E5%88%B6%E5%92%8C%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1"><span class="nav-number">5.7.2.</span> <span class="nav-text">创建、复制和负载均衡</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6"><span class="nav-number">5.8.</span> <span class="nav-text">垃圾回收</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%B1%E6%95%88%E5%89%AF%E6%9C%AC%E6%A3%80%E6%B5%8B"><span class="nav-number">5.9.</span> <span class="nav-text">失效副本检测</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%B9%E9%94%99%E5%92%8C%E8%AF%8A%E6%96%AD"><span class="nav-number">6.</span> <span class="nav-text">容错和诊断</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E5%8F%AF%E7%94%A8"><span class="nav-number">6.1.</span> <span class="nav-text">高可用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BF%AB%E9%80%9F%E6%81%A2%E5%A4%8D"><span class="nav-number">6.1.1.</span> <span class="nav-text">快速恢复</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Master-%E7%9A%84%E5%A4%8D%E5%88%B6"><span class="nav-number">6.1.2.</span> <span class="nav-text">Master 的复制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Chunk-%E7%9A%84%E5%A4%8D%E5%88%B6"><span class="nav-number">6.1.3.</span> <span class="nav-text">Chunk 的复制</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%AE%8C%E6%95%B4%E6%80%A7"><span class="nav-number">6.2.</span> <span class="nav-text">数据完整性</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FAQ"><span class="nav-number">7.</span> <span class="nav-text">FAQ</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%97%AE%E9%A2%98"><span class="nav-number">7.1.</span> <span class="nav-text">问题</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">8.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">9.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Andrewei"
+      src="/images/header.jpg">
+  <p class="site-author-name" itemprop="name">Andrewei</p>
+  <div class="site-description" itemprop="description">There's no feat, but what we make.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">35</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">41</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/andrewei1316" title="GitHub → https://github.com/andrewei1316" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Andrewei</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'c104fbea1a954f68954e',
+      clientSecret: 'b436df6cf1fa320ed8747515f6137aa6f88f7417',
+      repo        : 'andrewei1316.github.io',
+      owner       : 'Andrewei1316',
+      admin       : ['Andrewei1316'],
+      id          : 'bf9726b0d27ce6c3eb4adb6b80ffcc4a',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
