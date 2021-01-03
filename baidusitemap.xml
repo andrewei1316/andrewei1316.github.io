@@ -1,8 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://andrewei1316.github.io/2020/12/20/top-down-performance-analysis/</loc>
+    <lastmod>2021-01-03</lastmod>
+  </url>
+  <url>
+    <loc>https://andrewei1316.github.io/2020/12/13/skylake-microarchitecture/</loc>
+    <lastmod>2021-01-03</lastmod>
+  </url>
+  <url>
+    <loc>https://andrewei1316.github.io/2020/12/12/star-schema-benchmark/</loc>
+    <lastmod>2020-12-13</lastmod>
+  </url>
+  <url>
     <loc>https://andrewei1316.github.io/2020/11/20/column-stores-vs-row-stores/</loc>
-    <lastmod>2020-11-28</lastmod>
+    <lastmod>2020-12-13</lastmod>
   </url>
   <url>
     <loc>https://andrewei1316.github.io/2020/10/04/map-reduce/</loc>

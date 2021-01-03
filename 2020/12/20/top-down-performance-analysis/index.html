@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monaco:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"andrewei1316.github.io","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="简介随着处理器复杂度的增加、处理任务的多样化以及性能分析工具数据的难以管理，使得性能分析的难度日益增加。同时，在某些领域中，对于资源和时间的限制更加严格，进一步要求性能分析给出分析速度和结果准确性更优的方法。 这篇文章给出了一个自顶向下的分析方法（Top-Down Analysis），可以在乱序处理器上快速定位真正的性能瓶颈。该方法通过将性能数据结构化、分层展示，直观快速的展示性能瓶颈，并且已经被">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《A Top-Down Method for Performance Analysis and Counters Architecture》阅读笔记">
+<meta property="og:url" content="https://andrewei1316.github.io/2020/12/20/top-down-performance-analysis/index.html">
+<meta property="og:site_name" content="Andrewei&#39;s Blog">
+<meta property="og:description" content="简介随着处理器复杂度的增加、处理任务的多样化以及性能分析工具数据的难以管理，使得性能分析的难度日益增加。同时，在某些领域中，对于资源和时间的限制更加严格，进一步要求性能分析给出分析速度和结果准确性更优的方法。 这篇文章给出了一个自顶向下的分析方法（Top-Down Analysis），可以在乱序处理器上快速定位真正的性能瓶颈。该方法通过将性能数据结构化、分层展示，直观快速的展示性能瓶颈，并且已经被">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://andrewei1316.github.io/images/top_down_performance_analysis/figure1_out_of_order_cpu_block_diagram.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/top_down_performance_analysis/figure2_the_top_down_analysis_hierarchy.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/top_down_performance_analysis/figure3_top_level_breakdown_flowchart.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/top_down_performance_analysis/figure4_memory_bound_breakdown_flowchart.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/top_down_performance_analysis/figure10_spec_cpu2006_result.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/top_down_performance_analysis/figure11_spec_cpu2006_memory_bound.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/top_down_performance_analysis/figure12_spec_cpu2006_across_microarchitectures.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/top_down_performance_analysis/figure5_fmultiply1_3000.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/top_down_performance_analysis/figure6_blocked_multiply.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/top_down_performance_analysis/figure7_fmultiply2_3000.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/top_down_performance_analysis/figure8_fmultiply3_3000.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/top_down_performance_analysis/figure9_fmultiply4_3000.png">
+<meta property="article:published_time" content="2020-12-20T06:35:36.000Z">
+<meta property="article:modified_time" content="2021-01-03T09:16:39.494Z">
+<meta property="article:author" content="Andrewei">
+<meta property="article:tag" content="cpu">
+<meta property="article:tag" content="performance">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://andrewei1316.github.io/images/top_down_performance_analysis/figure1_out_of_order_cpu_block_diagram.png">
+
+<link rel="canonical" href="https://andrewei1316.github.io/2020/12/20/top-down-performance-analysis/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>《A Top-Down Method for Performance Analysis and Counters Architecture》阅读笔记 | Andrewei's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Andrewei's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Andrewei's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/andrewei1316" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://andrewei1316.github.io/2020/12/20/top-down-performance-analysis/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpg">
+      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="description" content="There's no feat, but what we make.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Andrewei's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          《A Top-Down Method for Performance Analysis and Counters Architecture》阅读笔记
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-12-20 14:35:36" itemprop="dateCreated datePublished" datetime="2020-12-20T14:35:36+08:00">2020-12-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-01-03 17:16:39" itemprop="dateModified" datetime="2021-01-03T17:16:39+08:00">2021-01-03</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpu/" itemprop="url" rel="index"><span itemprop="name">cpu</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpu/performance/" itemprop="url" rel="index"><span itemprop="name">performance</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>随着处理器复杂度的增加、处理任务的多样化以及性能分析工具数据的难以管理，使得性能分析的难度日益增加。同时，在某些领域中，对于资源和时间的限制更加严格，进一步要求性能分析给出分析速度和结果准确性更优的方法。</p>
+<p>这篇文章给出了一个自顶向下的分析方法（Top-Down Analysis），可以在乱序处理器上快速定位真正的性能瓶颈。该方法通过将性能数据结构化、分层展示，直观快速的展示性能瓶颈，并且已经被包括 <code>VTune</code> 在内的众多性能工具使用。</p>
+<p>不同于其他性能分析方法，该方法的开销很低，只需要在传统的 <code>PMU(Performance Monitor Unit)</code> 中增加 8 个简单的性能事件。它没有对问题域的限制，可以全面的进行性能分析，并且可以找到超标量核心的性能问题。</p>
+<a id="more"></a>
+
+<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>现代处理器在高性能方面有了长足的发展，比如大窗口无序执行（large-window out-of-order execution）、分支预测（predictive speculation）和硬件预取（hardware prefetching），这些方法使得程序都达到了很高的 <code>IPC(instructions-per-cycle)</code>。但是这些精密的设计在将性能推到更高的同时，也让程序能高速运行的条件变得苛刻，从众多数据中找到限制程序运行速度的原因也变得更加棘手。</p>
+<p>从全局视角来说，现代 CPU 有两个主要的部分：前端（Frontend）和后端（Backend）。</p>
+<p>前端负责从内存中拉取指令并将指令翻译为微操作（micro-operations, μops），这些 <code>μops</code> 会被传递给后端部分，但通常这些 <code>μops</code> 会暂存在 <code>ready-μops-queue</code> 中。</p>
+<p>后端负责以原始程序中的顺序调度（schedule）、执行（execute）和提交（commit, retire）这些 <code>μops</code>。</p>
+<p>Intel 第 3 代处理器（Ivy bridge）的微体系架构如图 1 所示</p>
+<p><img src="/images/top_down_performance_analysis/figure1_out_of_order_cpu_block_diagram.png" alt="Figure 1: Out-of-order CPU block diagram - Intel Core"></p>
+<p>使用传统方法预估停顿（stalls），比如计算 <code>cache misses</code> 的公式 $StallCycles = \sum Penalty_i * MissEvent_i$ ，仅适用于顺序执行（in-order）的 <code>CPU</code>。这种方法不适用于现代 <code>CPU</code> 的原因有：</p>
+<ol>
+<li><p>停顿重叠（Stalls Overlap）：由于很多单元并行工作，比如当指令 <code>cache</code> 没有命中的时候，可能 <code>data cache miss</code> 被处理</p>
+<blockquote>
+<p>Stalls overlap, where many units work in parallel. E.g. a data cache miss can be handled, while some future instruction is missing the instruction cache.</p>
+</blockquote>
+</li>
+<li><p>预测执行（Speculative execution）：当 <code>CPU</code> 跑在错误的控制分支上时，相对于正确分支的事件，错误分支的事件应当淡化处理</p>
+<blockquote>
+<p>Speculative execution, when CPU follows an incorrect control-path. Events from incorrect path are less critical than those from correct-path.</p>
+</blockquote>
+</li>
+<li><p>基于工作负载的判罚（Penalties are workloaddependent）：传统算法假设每种工作负载判罚都是相同的，但是比如不同的分支在预测错误时，导致的判罚可能的不同的</p>
+<blockquote>
+<p>Penalties are workloaddependent, while naïve-approach assumes a fixed penalty for all workloads. E.g. the distance between branches may add to a misprediction cost.</p>
+</blockquote>
+</li>
+<li><p>预先设置好的事件（Restriction to a pre-defined set of miss-events）：现代复杂的微处理器架构，会出现多种可能的情况，预先设置好事件集合只能覆盖大多数情况</p>
+<blockquote>
+<p>Restriction to a pre-defined set of miss-events, these sophisticated microarchitectures have so many possible hiccups and only the most common subset is covered by dedicated events.</p>
+</blockquote>
+</li>
+<li><p>超标量统计不准确（Superscalar inaccuracy）：<code>CPU</code> 可以在一个周期内 <code>issue</code>、<code>execute</code> 和 <code>retire</code> 多个操作，在越来越多技术的加持下，应用被流水线带宽延迟限制的情况被缓和。</p>
+<blockquote>
+<p>Superscalar inaccuracy, a CPU can issue, execute and retire multiple operations in a cycle. Some (e.g. client) applications become limited by the pipeline’s bandwidth as latency is mitigated with more and more techniques. </p>
+</blockquote>
+</li>
+</ol>
+<h2 id="自顶向下的分析（Top-Down-Analysis）"><a href="#自顶向下的分析（Top-Down-Analysis）" class="headerlink" title="自顶向下的分析（Top-Down Analysis）"></a>自顶向下的分析（Top-Down Analysis）</h2><p>自顶向下的分析方法旨在能快速准确的定位性能瓶颈点。该方法的执行过程为</p>
+<ol>
+<li>将 <code>CPU</code> 执行时间在较高结构层次上进行分类。这一步可以通过较高的数值标记（flagged）出性能较低的域（domain）</li>
+<li>层层下钻被标记的域（domain），最终可以确定性能出问题的一些具体的点，后面可以针对性的调查具体原因</li>
+</ol>
+<h3 id="层次结构（Hierarchy）"><a href="#层次结构（Hierarchy）" class="headerlink" title="层次结构（Hierarchy）"></a>层次结构（Hierarchy）</h3><p><code>Top-Down Analysis</code> 划定的层次结构如图 2 所示</p>
+<p><img src="/images/top_down_performance_analysis/figure2_the_top_down_analysis_hierarchy.png" alt="Figure 2: The Top-Down Analysis Hierarchy"></p>
+<p>在 <code>Top-Down Analysis</code> 中，流水线被分解为四个基础的分类：<code>Retiring</code>、<code>Bad Speculation</code>、<code>Frontend Bound</code> 和 <code>Backend Bound</code>。</p>
+<p>下面通过一个被 <code>cache</code> 性能限制的例子来介绍排查问题的流程，当使用 <code>Top-Down Analysis</code> 方法分析后：</p>
+<ol>
+<li><p>发现 <code>Backend Bound</code> 被标记，而 <code>Frontend Bound</code> 则不会被标记。此时应该下钻 <code>Backend Bound</code> 部分而忽略 <code>Frontend Bound</code>；</p>
+</li>
+<li><p>下钻 <code>Backend Bound</code> 后，会发现 <code>Memory Bound</code> 分类被标记（假设程序是 <code>cache</code> 密集型）。此时应当继续下钻 <code>Memory Bound</code>，而忽略非 <code>Memory Bound</code> 部分；</p>
+</li>
+<li><p>下钻 <code>Memory Bound</code> 后，会发现 <code>L1 Bound</code> 被标记；</p>
+</li>
+<li><p>最终可以确定程序性能低可能是由于加载数据与写回数据重叠或者缓存被分割加载。</p>
+<blockquote>
+<p>这个结论没有看明白，把原文放在这里</p>
+<p>Lastly, Loads block due to overlap with earlier stores or cache line split loads might be specific performance issues underneath L1 Bound</p>
+</blockquote>
+</li>
+</ol>
+<p><strong>基于分层的结构为分析统计信息增加了一张自然的安全网</strong>，除非从根节点到某个内部节点之间的所有节点都被标记了，否则这个内部节点应该被忽略。例如，一段计算除法的代码可能会导致 <code>Memory Bound</code> 和 <code>Divider</code> 节点都具有很高的值，但是 <code>Divider</code> 节点应该被忽略如果 <code>Backend</code> 和 <code>CoreBound</code> 节点没有被标记。我们将这个原则称为分层安全性（hierarchical-safety property）。<strong>只有兄弟节点的值才有比较意义</strong>，因为兄弟节点的值是基于相同的流水线阶段统计出来的。</p>
+<h3 id="顶层结构的分解（Top-Level-Breakdown）"><a href="#顶层结构的分解（Top-Level-Breakdown）" class="headerlink" title="顶层结构的分解（Top Level Breakdown）"></a>顶层结构的分解（Top Level Breakdown）</h3><p>对于一个复杂的微体系结构，顶层结构如何分类是一个很大的挑战。这里我们选择分类的边界是图 1 中被标记星号的指令发射点。基于这个边界，我们将流水线槽位（pipeline-slot）划分为四类：前端限制（Frontend Bound）、后端限制（Backend Bound）、错误预测（Bad Speculation）和退休（Retiring）。具体的分类标准如图 3 所示</p>
+<p><img src="/images/top_down_performance_analysis/figure3_top_level_breakdown_flowchart.png" alt="Figure 3: Top Level breakdown flowchart"></p>
+<ol>
+<li>在一个周期内，如果 <code>μops</code> 被发射（issued），则这个 <code>μops</code> 只会被退休（retired）或者取消（cancelled），所以它应当归属于退休或者错误预测的分类</li>
+<li>如果出现了 <code>backend-stall</code> （即由于后端资源不足而造成 <code>μops</code> 反压），导致 <code>μops</code> 没有被发射，则这次的停顿归属于后端</li>
+<li>如果没有出现 <code>backend-stall</code> 并且 <code>μops</code> 没有被发射，则停顿归属于前端</li>
+</ol>
+<p>由于超标量处理器可以在每个周期发出多个 <code>μops</code> ，所以在流水线槽粒度上分类可以非常健壮和准确，这也是 <code>Top-Down Analysis</code> 与之前的性能分析方法的明显区别。</p>
+<h3 id="前端限制分类（Frontend-Bound-Category）"><a href="#前端限制分类（Frontend-Bound-Category）" class="headerlink" title="前端限制分类（Frontend Bound Category）"></a>前端限制分类（Frontend Bound Category）</h3><p>回忆一下前端的主要工作：</p>
+<ol>
+<li>分支预测，预测下一个要拉取的地址</li>
+<li>拉取 <code>cache line</code> 并解析成指令</li>
+<li>将指令解析成 <code>micro-ops</code> </li>
+</ol>
+<p><code>Frontend Bound</code> 进一步分为 <code>Fetch Latency</code> 和 <code>Fetch Bandwidth</code> 两类：</p>
+<ol>
+<li><p><code>Fetch Latency</code> 表示任何原因导致的指令拉取延迟。 <code>icache miss</code> 、 <code>iTLB miss</code> 和 <code>Branch Resteers</code> 都属于这个分类。</p>
+<blockquote>
+<p><code>Branch Resteers</code> 表示流水线刷新（pipeline flush）之后的指令提取延迟。<code>pipeline flush</code> 可能是由于一些清楚状态的事件引起，例如 <code>branch misprediction</code> 或者 <code>memory nukes</code> ，<code>Branch Resteers</code> 与 <code>Bad Speculation</code> 密切相关。</p>
+</blockquote>
+</li>
+<li><p><code>Fetch Bandwidth</code> 表示指令解码低效的问题。比如高 <code>IPC</code> 程序往往会受到前端带宽(<code>bandwith</code>) 的影响。此时需要增加额外的硬件来维持带宽，减少延迟。Intel 使用 <code> LSD(Loop Stream Detector)</code> 和 <code>DSB(Decoded-μop Stream Buffer)</code> 来解决这个问题。</p>
+<blockquote>
+<p>环流侦测器LSD最初由Intel Core微架构引入（注：位于BPU中）。LSD侦测符合条件的小循环，将其锁定在微指令队列中。循环指令可以直接从微指令队列中获取，不再需要取指/译码或者从任何的缓存中读取微指令，直到分支预测失败结束循环。</p>
+<p>符合如下特征的循环方可由LSD/微指令队列锁定：</p>
+<ul>
+<li>最多由8个32字节指令块构成</li>
+<li>最多28条微指令（~28 x86指令）</li>
+<li>所有的微指令同时存在于微指令缓存中</li>
+<li>可以包括最多8个采纳分支，且这些分支不能是CALL或者RET指令</li>
+<li>不能有未匹配的栈操作。例如，PUSH指令比POP指令多。</li>
+</ul>
+<p>许多计算密集型的循环，查找，和软件字符串搬移操作都符合这些特征。</p>
+<p>软件应该“机会主义式的”使用LSD功能。对于要求高性能的代码，循环展开通常比LSD循环锁定更受推荐，即便是循环展开可能导致无法做LSD锁定（例如代码长度过大）。</p>
+<p>引用自 <a target="_blank" rel="noopener" href="https://blog.csdn.net/qq_43401808/article/details/85997414">https://blog.csdn.net/qq_43401808/article/details/85997414</a></p>
+</blockquote>
+</li>
+</ol>
+<h3 id="错误预测分类（Bad-Speculation-category）"><a href="#错误预测分类（Bad-Speculation-category）" class="headerlink" title="错误预测分类（Bad Speculation category）"></a>错误预测分类（Bad Speculation category）</h3><p><code>Bad Speculation</code> 反映了由于错误预测（incorrect speculations）导致的 <code>pipeline slots</code> 浪费，主要包括两部分：</p>
+<ol>
+<li><p>执行没有退休（retire）的 <code>μops</code> 的槽位（slots）</p>
+</li>
+<li><p>从先前错误预测中恢复而导致流水线被阻塞的槽位</p>
+<blockquote>
+<p>由于错误预测还涉及到能否快速的将正确的指令拉取到，所以这边可能与 <code>Frontend Bound</code> 中的 <code>Branch Resteers</code> 重叠。</p>
+</blockquote>
+</li>
+</ol>
+<p><code>Top-Down Analysis</code> 把 <code>Bad Speculation</code> 放在了顶层，这样可以方便的确认预测错误影响正常工作的比例，并反过来决定其他类别中值的准确性。</p>
+<p><code>Bad Speculation</code> 进一步分成了 <code>Branch Mispredict</code> 和 <code>Machine Clears</code> ，后者的情况导致的问题与 <code>pipeline flush</code> 类似：</p>
+<ol>
+<li><code>Branch Mispredict</code> 关注如何使程序控制流对分支预测更友好</li>
+<li><code>Machine Clears</code> 指出一些异常情况，例如清除内存排序机（Memory Ordering Nukes clears）、自修改代码（self modifying code）或者非法地址访问（certain loads to illegal address ranges）</li>
+</ol>
+<h3 id="退休分类（Retiring-Category）"><a href="#退休分类（Retiring-Category）" class="headerlink" title="退休分类（Retiring Category）"></a>退休分类（Retiring Category）</h3><p><code>Retiring Category</code> 反映了最终退休的 <code>μops</code> 占槽位的比例。理想情况下所有的槽位都应该被标记为退休状态，即 <code>Retiring</code> 比例为 <code>100%</code>。</p>
+<p>并非有了很高的 <code>Retiring</code> 比例性能就没有提升空间了，依然可以看下下面几个指标</p>
+<ol>
+<li><code>Microcode Sequences</code> 中的 <code>Floating Point assists</code> 是一种对性能很不友好的伪指令，应当尽可能避免</li>
+<li>占比很高的非向量化（non-vectorized）代码可以优化成为向量化（vectorized）的代码。向量化代码本质上可以让单个指令（或者说 <code>μop</code>）完成更多的操作，从而提高性能。 </li>
+</ol>
+<h3 id="后端限制分类（Backend-Bound-Category）"><a href="#后端限制分类（Backend-Bound-Category）" class="headerlink" title="后端限制分类（Backend Bound Category）"></a>后端限制分类（Backend Bound Category）</h3><p>后端限制反映了由于后端没有足够的资源接收而导致没有 <code>μops</code> 被 <code>issued</code> 的情况。</p>
+<p>后端限制根据是否因为执行单元（execution units）被占用而导致的停顿分为内存限制（Memory Bound）和核心限制（Core Bound）。通常情况下，为了达到最高的 <code>IPC</code>，必须要保持执行单元始终处于繁忙状态。例如在一个有 4 个 slot 的机器上，如果在某个状态下只有 3 个或者更少的 <code>μops</code> 被执行就意味着没有达到最佳状态（即 <code>IPC</code> 不为 4）。这些周期成为执行停顿（ExecutionStalls）。</p>
+<h4 id="内存限制（Memory-Bound）"><a href="#内存限制（Memory-Bound）" class="headerlink" title="内存限制（Memory Bound）"></a>内存限制（Memory Bound）</h4><p>内存限制反应了由于内存子系统导致的执行停顿，比如对于一个 <code>load</code> 操作所有的缓存都没有命中。</p>
+<p>现代 CPU 实现了三个不同层次的缓存来解决主存的延迟问题。在 <code>intel</code> 的解决方案中，第一层级的 <code>cache</code> 是一个数据缓存，第二层级的 <code>cache</code> 是一个指令和数据共享的缓存，这两层缓存是每个核心一个。第三层级的 <code>cahce</code> 是所有核心共享的。</p>
+<p>一个乱序（out-of-order）执行的调度器会通过先执行那些没有依赖的 <code>μops</code> 尽可能的保证执行单元始终处于忙碌状态来避免内存访问停顿。所以内存访问停顿的真正代价是调度器没有准备好的 <code>μops</code> 给执行模块，这些（delay）的 <code>μops</code> 要么在等待内存访问，要么依赖其他的 <code>μops</code>。</p>
+<p>图4说明了如何区分是哪一层缓存导致的执行停顿</p>
+<p><img src="/images/top_down_performance_analysis/figure4_memory_bound_breakdown_flowchart.png" alt="Figure 4: Memory Bound breakdown flowchart"></p>
+<ul>
+<li><code>L1D</code> 通常具有与 <code>ALU</code> 停顿媲美的短暂延迟，但是在某些场景下，<code>L1D</code> 也会有较高的延迟。比如 <code>load</code> 操作被阻塞，无法将数据从早先的 <code>store</code> 转发到一个相同的地址（load blocked to forward data from earlier store to an overlapping address）。再比如 <code>load</code> 操作由于 <code>4K</code> 对齐而被阻塞。这些情况都属于 <code>L1 Bound</code>。</li>
+<li>在乱序执行的 <code>CPU</code> 上，由于 <code>X86</code> 架构的内存顺序访问的要求，<code>store</code> 操作会被缓存（buffered）并在退休之后（post-retirement）执行。多数时候，<code>store</code> 操作对性能影响很小，但仍不能随意被忽视。在 <code>Top-Donw Analysis</code> 中，定义了 <code>Store Bound</code> 作为低执行端口利用率（low execution ports utilization）、高 <code>store</code> 缓冲数量（high number of stores are buffered）的周期。</li>
+<li>在 <code>Ext. Memory Bound</code> 分类中，区分 <code>Memory Bandwidth</code> 和 <code>Memory Latency</code> 的方法是统计有多少请求依赖从内存中获取数据，如果这类请求的占比超过一个阈值（比如 70%），就将其划归到 <code>Memory Bandwidth</code> 中，否则划归到 <code>Memory Latency</code> 中。</li>
+</ul>
+<h4 id="核心限制（Core-Bound）"><a href="#核心限制（Core-Bound）" class="headerlink" title="核心限制（Core Bound）"></a>核心限制（Core Bound）</h4><p>核心限制反映了短的执行饥饿周期或者执行端口利用率不佳，也就是说执行单元存在压力或者程序中缺少指令级别并行。例如一个长延迟的除法操作可能会序列化执行，导致一个周期内只有少量的执行端口被使用。</p>
+<p><code>Core Bound</code> 的问题一般可以通过更优秀的代码来解决。例如，一系列相关的算术运算被标记为 <code>Core Bound</code>，编译器可以通过更好的指令调度来缓解。同时，矢量化（Vectorization）也可以缓解 <code>Core Bound</code> 问题。</p>
+<h2 id="计数架构（Counters-Architecture）"><a href="#计数架构（Counters-Architecture）" class="headerlink" title="计数架构（Counters Architecture）"></a>计数架构（Counters Architecture）</h2><p>这一章主要介绍 <code>Top-Down Analysis</code> 方法所需要的硬件支持。现代 <code>CPU</code> 中都含有一个元件 <code>PMU</code>，它提供了一组能够计算性能事件的通用计数器。</p>
+<p>表1 中总结了基本的事件，表2 总结了 <code>Top-Down Analysis</code> 中指标的计算方法</p>
+<p>Table 1: Definitions of Top-Down performance events</p>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TotalSlots</td>
+<td>Total number of issue-pipeline slots.</td>
+</tr>
+<tr>
+<td>SlotsIssued</td>
+<td>Utilized issue-pipeline slots to issue operations</td>
+</tr>
+<tr>
+<td>SlotsRetired</td>
+<td>Utilized issue-pipeline slots to retire (complete) operations</td>
+</tr>
+<tr>
+<td>FetchBubbles</td>
+<td>Unutilized issue-pipeline slots while there is no backend-stall</td>
+</tr>
+<tr>
+<td>RecoveryBubbles</td>
+<td>Unutilized issue-pipeline slots due to recovery from earlier miss-speculation</td>
+</tr>
+<tr>
+<td>BrMispredRetired</td>
+<td>Retired miss-predicted branch instructions</td>
+</tr>
+<tr>
+<td>MachineClears</td>
+<td>Machine clear events (pipeline is flushed)</td>
+</tr>
+<tr>
+<td>MsSlotsRetired</td>
+<td>Retired pipeline slots supplied by the microsequencer fetch-unit</td>
+</tr>
+<tr>
+<td>OpsExecuted</td>
+<td>Number of operations executed in a cycle</td>
+</tr>
+<tr>
+<td>MemStalls.AnyLoad</td>
+<td>Cycles with no uops executed and at least 1 inflight load that is not completed yet</td>
+</tr>
+<tr>
+<td>MemStalls.L1miss</td>
+<td>Cycles with no uops executed and at least 1 inflight load that has missed the L1-cache</td>
+</tr>
+<tr>
+<td>MemStalls.L2miss</td>
+<td>Cycles with no uops executed and at least 1 inflight load that has missed the L2-cache</td>
+</tr>
+<tr>
+<td>MemStalls.L3miss</td>
+<td>Cycles with no uops executed and at least 1 inflight load that has missed the L3-cache</td>
+</tr>
+<tr>
+<td>MemStalls.Stores</td>
+<td>Cycles with few uops executed and no more stores can be issued</td>
+</tr>
+<tr>
+<td>ExtMemOutstanding</td>
+<td>Number of outstanding requests to the memory controller every cycle</td>
+</tr>
+</tbody></table>
+<p>Table 2: Formulas for Top-Down Metrics</p>
+<table>
+<thead>
+<tr>
+<th>Metric Name</th>
+<th>Formula</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Frontend Bound</td>
+<td>FetchBubbles / TotalSlots</td>
+</tr>
+<tr>
+<td>Bad Speculation</td>
+<td>(SlotsIssued – SlotsRetired + RecoveryBubbles) / TotalSlots</td>
+</tr>
+<tr>
+<td>Retiring</td>
+<td>SlotsRetired / TotalSlots</td>
+</tr>
+<tr>
+<td>Backend Bound</td>
+<td>1 – (Frontend Bound + Bad Speculation + Retiring)</td>
+</tr>
+<tr>
+<td>Fetch Latency Bound</td>
+<td>FetchBubbles[≥ #MIW] / Clocks</td>
+</tr>
+<tr>
+<td>Fetch Bandwidth Bound</td>
+<td>Frontend Bound – Fetch Latency Bound</td>
+</tr>
+<tr>
+<td>#BrMispredFraction</td>
+<td>BrMispredRetired / (BrMispredRetired + MachineClears)</td>
+</tr>
+<tr>
+<td>Branch Mispredicts</td>
+<td>#BrMispredFraction * Bad Speculation</td>
+</tr>
+<tr>
+<td>Machine Clears</td>
+<td>Bad Speculation – Branch Mispredicts</td>
+</tr>
+<tr>
+<td>MicroSequencer</td>
+<td>MsSlotsRetired / TotalSlots</td>
+</tr>
+<tr>
+<td>BASE</td>
+<td>Retiring – MicroSequencer</td>
+</tr>
+<tr>
+<td>#ExecutionStalls</td>
+<td>(ΣOpsExecuted[= FEW] ) / Clocks</td>
+</tr>
+<tr>
+<td>Memory Bound</td>
+<td>(MemStalls.AnyLoad + MemStalls.Stores) / Clocks</td>
+</tr>
+<tr>
+<td>Core Bound</td>
+<td>#ExecutionStalls – Memory Bound</td>
+</tr>
+<tr>
+<td>L1 Bound</td>
+<td>(MemStalls.AnyLoad – MemStalls.L1miss) / Clocks</td>
+</tr>
+<tr>
+<td>L2 Bound</td>
+<td>(MemStalls.L1miss – MemStalls.L2miss) / Clocks</td>
+</tr>
+<tr>
+<td>L3 Bound</td>
+<td>(MemStalls.L2miss – MemStalls.L3miss) / Clocks</td>
+</tr>
+<tr>
+<td>Ext. Memory Bound</td>
+<td>MemStalls.L3miss / Clocks</td>
+</tr>
+<tr>
+<td>MEM Bandwidth</td>
+<td>ExtMemOutstanding[≥ THRESHOLD] / ExtMemOutstanding[≥ 1]</td>
+</tr>
+<tr>
+<td>MEM Latency</td>
+<td>(ExtMemOutstanding[≥ 1] / Clocks) – MEM Bandwidth</td>
+</tr>
+</tbody></table>
+<h2 id="使用效果"><a href="#使用效果" class="headerlink" title="使用效果"></a>使用效果</h2><p>这里使用了业界通用的 CPU 测试方法 <code>SPEC CPU2006</code> 来进行测试，并使用 <code>Top-Down Analysis</code> 方法来收集和分析性能点。</p>
+<p>测试分为两个场景，分别为 <code>single-thread (1C)</code> 和 <code>multi-copy (4C)</code>。具体的测试环境为</p>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>规格</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Processor</td>
+<td>Intel® Core™ i7-3940XM (Ivy Bridge). 3 GHz fixed frequency. A quadcore with 8MB L3 cache. Hardware prefetchers enabled.</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>8GB DDR3 @1600 MHz</td>
+</tr>
+<tr>
+<td>OS</td>
+<td>Windows 8 64-bit</td>
+</tr>
+<tr>
+<td>Benchmark</td>
+<td>SPEC CPU 2006 v1.2 (base/rate mode)</td>
+</tr>
+<tr>
+<td>Compiler</td>
+<td>Intel Compiler 14 (SSE4.2 ISA)</td>
+</tr>
+</tbody></table>
+<h3 id="SPEC-CPU2006"><a href="#SPEC-CPU2006" class="headerlink" title="SPEC CPU2006"></a>SPEC CPU2006</h3><p>图5、图 6 展示了 <code>1C</code> 和 <code>2C</code> 两个场景下的分析结果</p>
+<p><img src="/images/top_down_performance_analysis/figure10_spec_cpu2006_result.png" alt="Figure10 SPEC CPU2006 Result"></p>
+<p>通过对比可以发现，相对于 <code>1C</code> 场景，在 <code>4C</code> 场景中，<code> Memory Bound</code> 的占比扩大。这是一个预期的结果，因为 <code>L3 Cache</code> 是多核共享的。</p>
+<p>继续下钻 <code>Ext. Memory Bound</code> 这个分类</p>
+<p><img src="/images/top_down_performance_analysis/figure11_spec_cpu2006_memory_bound.png" alt="Figure11 SPEC CPU2006 Memory Bound"></p>
+<p>可以看到 ，在 <code>1C</code> 场景下，<code>DRAM Bound</code> 原因是 <code>Latency</code> 导致的，但是在 <code>4C</code> 场景下，<code>DRAM Bandwidth</code> 的比重在某些测试用例中成为主要的 <code>DRAM Bound</code> 原因，这是由于这些用例都有对 <code>DRAM</code> 进行大量的数据访问所导致的。</p>
+<p>而对于不同处理器架构的对比</p>
+<p><img src="/images/top_down_performance_analysis/figure12_spec_cpu2006_across_microarchitectures.png" alt="Figure12 SPEC CPU2006 Across Microarchitectures"></p>
+<p>可以看到，<code>4th</code> 的处理器 <code>Frontend Bound</code> 的比例明显减少，这有由于Intel在4代的处理器上对 <code>i-TLB</code> 和 <code>i-Cache</code> 均进行了优化所导致的。从该结果可以佐证对特定模块优化后的性能提升，并且还可以进行不同系列/不同架构直接的处理器对比，来更好地理解不同处理器之间的差异。</p>
+<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><p>本章将使用 <code>java</code> 语言以不同的方式实现矩阵乘法，并通过 <code>vtune</code> 监控运行信息，对比不同实现对于 <code>CPU</code> 的使用情况。</p>
+<p>实验将首先初始化两个个 $3000 * 3000$ 长度的 <code>float</code> 一维数组，并填充随机数值，然后使用不同的方法计算矩阵乘法 10 次。</p>
+<h3 id="场景1"><a href="#场景1" class="headerlink" title="场景1"></a>场景1</h3><p>最简单最朴素的一种实现</p>
+<p>代码如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">float</span>[] multiply1(<span class="keyword">float</span>[] matrix1, <span class="keyword">float</span>[] matrix2, <span class="keyword">int</span> size) &#123;</span><br><span class="line">  <span class="keyword">float</span>[] res = <span class="keyword">new</span> <span class="keyword">float</span>[size * size];</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; size; i++) &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; size; j++) &#123;</span><br><span class="line">      <span class="keyword">float</span> sum = <span class="number">0</span>;</span><br><span class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> k = <span class="number">0</span>; k &lt; size; k++) &#123;</span><br><span class="line">        sum += matrix1[i * size + k] * matrix2[k * size + j];</span><br><span class="line">      &#125;</span><br><span class="line">      res[i * size + j] = sum;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>vtune 的监控信息如下</p>
+<p><img src="/images/top_down_performance_analysis/figure5_fmultiply1_3000.png" alt="Figure5 Fmultiply1_3000"></p>
+<h3 id="场景2"><a href="#场景2" class="headerlink" title="场景2"></a>场景2</h3><p>该版本为文章 <a target="_blank" rel="noopener" href="http://csapp.cs.cmu.edu/2e/waside/waside-blocking.pdf">CS:APP2e Web Aside MEM:BLOCKING: Using Blocking to Increase Temporal Locality</a> 中介绍的一个方法。具体的原理是先将原始的矩阵分成多个子矩阵，然后利用数学原理，将子矩阵之间的运算变成标量运算。</p>
+<p>下面这段代码实现了这种方法，基本思想是将A，C分成 $1 * bsize$ 的 行片段（row slivers），并把B 分成 $bsize * bsize$ 的块。</p>
+<ol>
+<li>首先，最内部的 <code>(j, k)</code> 循环（就是最深和次深的两个循环），将A的行片段乘上B的块，然后将求和结果赋值给C的行片段。</li>
+<li><code>i</code>的循环，迭代了A和C的n个行片段，每次循环使用了B中相同的block（块大小是<code>bsize * bsize</code>）</li>
+</ol>
+<p><img src="/images/top_down_performance_analysis/figure6_blocked_multiply.png" alt="Figure6 Block Multiply"></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">float</span>[] multiply2(<span class="keyword">float</span>[] matrix1, <span class="keyword">float</span>[] matrix2, <span class="keyword">int</span> size) &#123;</span><br><span class="line">  <span class="keyword">int</span> BLOCK_SIZE = <span class="number">8</span>;</span><br><span class="line">  <span class="keyword">float</span>[] res = <span class="keyword">new</span> <span class="keyword">float</span>[size * size];</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> kk = <span class="number">0</span>; kk &lt; size; kk += BLOCK_SIZE) &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> jj = <span class="number">0</span>; jj &lt; size; jj += BLOCK_SIZE) &#123;</span><br><span class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; size; i++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = jj; j &lt; jj + BLOCK_SIZE; ++j) &#123;</span><br><span class="line">          <span class="keyword">float</span> sum = res[i * size + j];</span><br><span class="line">          <span class="keyword">for</span> (<span class="keyword">int</span> k = kk; k &lt; kk + BLOCK_SIZE; ++k) &#123;</span><br><span class="line">            sum += matrix1[i * size + k] * matrix2[k * size + j];</span><br><span class="line">          &#125;</span><br><span class="line">          res[i * size + j] = sum;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Vtune 的监控信息如下</p>
+<p><img src="/images/top_down_performance_analysis/figure7_fmultiply2_3000.png" alt="Figure7 Fmultiply2_3000"></p>
+<h3 id="场景3"><a href="#场景3" class="headerlink" title="场景3"></a>场景3</h3><p>该版本为文章 <a target="_blank" rel="noopener" href="https://richardstartin.github.io/posts/multiplying-matrices-fast-and-slow">Multiplying Matrices, Fast and Slow</a> 中提到的一种方法。</p>
+<p>代码如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">float</span>[] multiply3(<span class="keyword">float</span>[] matrix1, <span class="keyword">float</span>[] matrix2, <span class="keyword">int</span> size) &#123;</span><br><span class="line">  <span class="keyword">float</span>[] res = <span class="keyword">new</span> <span class="keyword">float</span>[size * size];</span><br><span class="line">  <span class="keyword">int</span> in = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; size; ++i) &#123;</span><br><span class="line">    <span class="keyword">int</span> kn = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> k = <span class="number">0</span>; k &lt; size; ++k) &#123;</span><br><span class="line">      <span class="keyword">float</span> aik = matrix1[in + k];</span><br><span class="line">      <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; size; ++j) &#123;</span><br><span class="line">        res[in + j] += aik * matrix2[kn + j];</span><br><span class="line">      &#125;</span><br><span class="line">      kn += size;</span><br><span class="line">    &#125;</span><br><span class="line">    in += size;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Vtune 监控信息如下</p>
+<p><img src="/images/top_down_performance_analysis/figure8_fmultiply3_3000.png" alt="Figure8 Fmultiply3_3000"></p>
+<h3 id="场景4"><a href="#场景4" class="headerlink" title="场景4"></a>场景4</h3><p>该版本为场景3版本的升级版</p>
+<p>代码如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">float</span>[] multiply4(<span class="keyword">float</span>[] matrix1, <span class="keyword">float</span>[] matrix2, <span class="keyword">int</span> size) &#123;</span><br><span class="line">  <span class="keyword">float</span>[] res = <span class="keyword">new</span> <span class="keyword">float</span>[size * size];</span><br><span class="line">  <span class="keyword">float</span>[] bBuffer = <span class="keyword">new</span> <span class="keyword">float</span>[size];</span><br><span class="line">  <span class="keyword">float</span>[] cBuffer = <span class="keyword">new</span> <span class="keyword">float</span>[size];</span><br><span class="line">  <span class="keyword">int</span> in = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; size; ++i) &#123;</span><br><span class="line">    <span class="keyword">int</span> kn = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> k = <span class="number">0</span>; k &lt; size; ++k) &#123;</span><br><span class="line">      <span class="keyword">float</span> aik = matrix1[in + k];</span><br><span class="line">      System.arraycopy(matrix2, kn, bBuffer, <span class="number">0</span>, size);</span><br><span class="line">      saxpy(size, aik, bBuffer, cBuffer);</span><br><span class="line">      kn += size;</span><br><span class="line">    &#125;</span><br><span class="line">    System.arraycopy(cBuffer, <span class="number">0</span>, res, in, size);</span><br><span class="line">    Arrays.fill(cBuffer, <span class="number">0f</span>);</span><br><span class="line">    in += size;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> res;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">saxpy</span><span class="params">(<span class="keyword">int</span> n, <span class="keyword">float</span> aik, <span class="keyword">float</span>[] b, <span class="keyword">float</span>[] c)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; n; ++i) &#123;</span><br><span class="line">    c[i] += aik * b[i];</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Vtune 监控信息如下</p>
+<p><img src="/images/top_down_performance_analysis/figure9_fmultiply4_3000.png" alt="Figure9 Fmultiply4_3000"></p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a target="_blank" rel="noopener" href="https://ieeexplore.ieee.org/document/6844459/metrics#metrics">A Top-Down method for performance analysis and counters architecture</a></p>
+<p><a target="_blank" rel="noopener" href="https://software.intel.com/content/www/us/en/develop/documentation/vtune-help/top.html">Intel® VTune™ Profiler</a></p>
+<p><a target="_blank" rel="noopener" href="https://kernel.taobao.org/2019/03/Top-down-Microarchitecture-Analysis-Method/">Top-down Microarchitecture Analysis Method</a></p>
+<p><a target="_blank" rel="noopener" href="https://richardstartin.github.io/posts/multiplying-matrices-fast-and-slow">Multiplying Matrices, Fast and Slow</a></p>
+<p><a target="_blank" rel="noopener" href="http://csapp.cs.cmu.edu/2e/waside/waside-blocking.pdf">CS:APP2e Web Aside MEM:BLOCKING: Using Blocking to Increase Temporal Locality</a></p>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/weixinpay.jpg" alt="Andrewei 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.jpg" alt="Andrewei 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Andrewei
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://andrewei1316.github.io/2020/12/20/top-down-performance-analysis/" title="《A Top-Down Method for Performance Analysis and Counters Architecture》阅读笔记">https://andrewei1316.github.io/2020/12/20/top-down-performance-analysis/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/cpu/" rel="tag"><i class="fa fa-tag"></i> cpu</a>
+              <a href="/tags/performance/" rel="tag"><i class="fa fa-tag"></i> performance</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/12/13/skylake-microarchitecture/" rel="prev" title="【转载】Skylake Microarchitecture">
+      <i class="fa fa-chevron-left"></i> 【转载】Skylake Microarchitecture
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%83%8C%E6%99%AF"><span class="nav-number">2.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E9%A1%B6%E5%90%91%E4%B8%8B%E7%9A%84%E5%88%86%E6%9E%90%EF%BC%88Top-Down-Analysis%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">自顶向下的分析（Top-Down Analysis）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B1%82%E6%AC%A1%E7%BB%93%E6%9E%84%EF%BC%88Hierarchy%EF%BC%89"><span class="nav-number">3.1.</span> <span class="nav-text">层次结构（Hierarchy）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B6%E5%B1%82%E7%BB%93%E6%9E%84%E7%9A%84%E5%88%86%E8%A7%A3%EF%BC%88Top-Level-Breakdown%EF%BC%89"><span class="nav-number">3.2.</span> <span class="nav-text">顶层结构的分解（Top Level Breakdown）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E7%AB%AF%E9%99%90%E5%88%B6%E5%88%86%E7%B1%BB%EF%BC%88Frontend-Bound-Category%EF%BC%89"><span class="nav-number">3.3.</span> <span class="nav-text">前端限制分类（Frontend Bound Category）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%94%99%E8%AF%AF%E9%A2%84%E6%B5%8B%E5%88%86%E7%B1%BB%EF%BC%88Bad-Speculation-category%EF%BC%89"><span class="nav-number">3.4.</span> <span class="nav-text">错误预测分类（Bad Speculation category）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%80%E4%BC%91%E5%88%86%E7%B1%BB%EF%BC%88Retiring-Category%EF%BC%89"><span class="nav-number">3.5.</span> <span class="nav-text">退休分类（Retiring Category）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8E%E7%AB%AF%E9%99%90%E5%88%B6%E5%88%86%E7%B1%BB%EF%BC%88Backend-Bound-Category%EF%BC%89"><span class="nav-number">3.6.</span> <span class="nav-text">后端限制分类（Backend Bound Category）</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E9%99%90%E5%88%B6%EF%BC%88Memory-Bound%EF%BC%89"><span class="nav-number">3.6.1.</span> <span class="nav-text">内存限制（Memory Bound）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E9%99%90%E5%88%B6%EF%BC%88Core-Bound%EF%BC%89"><span class="nav-number">3.6.2.</span> <span class="nav-text">核心限制（Core Bound）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%A1%E6%95%B0%E6%9E%B6%E6%9E%84%EF%BC%88Counters-Architecture%EF%BC%89"><span class="nav-number">4.</span> <span class="nav-text">计数架构（Counters Architecture）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E6%95%88%E6%9E%9C"><span class="nav-number">5.</span> <span class="nav-text">使用效果</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#SPEC-CPU2006"><span class="nav-number">5.1.</span> <span class="nav-text">SPEC CPU2006</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-number">6.</span> <span class="nav-text">实验</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%BA%E6%99%AF1"><span class="nav-number">6.1.</span> <span class="nav-text">场景1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%BA%E6%99%AF2"><span class="nav-number">6.2.</span> <span class="nav-text">场景2</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%BA%E6%99%AF3"><span class="nav-number">6.3.</span> <span class="nav-text">场景3</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%BA%E6%99%AF4"><span class="nav-number">6.4.</span> <span class="nav-text">场景4</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">7.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Andrewei"
+      src="/images/header.jpg">
+  <p class="site-author-name" itemprop="name">Andrewei</p>
+  <div class="site-description" itemprop="description">There's no feat, but what we make.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">38</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">48</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/andrewei1316" title="GitHub → https://github.com/andrewei1316" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Andrewei</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'c104fbea1a954f68954e',
+      clientSecret: 'b436df6cf1fa320ed8747515f6137aa6f88f7417',
+      repo        : 'andrewei1316.github.io',
+      owner       : 'Andrewei1316',
+      admin       : ['Andrewei1316'],
+      id          : 'f56b196131996df020c685068b89b78f',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

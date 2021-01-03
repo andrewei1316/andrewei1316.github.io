@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monaco:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"andrewei1316.github.io","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="简介SSB（Star Schema Benchmark）是麻省州立大学波士顿校区的研究人员定义的基于现实商业应用的数据模型，业界公认用来模拟决策支持类应用，比较公正和中立。学术界和工业界普遍采用它来评价决策支持技术方面应用的性能。SSB 由 TPC（Transaction Processing Performance Council，事务处理性能委员会）发布的 TPC-H 标准改进而来。它将 TP">
+<meta property="og:type" content="article">
+<meta property="og:title" content="《Star Schema Benchmark》阅读笔记">
+<meta property="og:url" content="https://andrewei1316.github.io/2020/12/12/star-schema-benchmark/index.html">
+<meta property="og:site_name" content="Andrewei&#39;s Blog">
+<meta property="og:description" content="简介SSB（Star Schema Benchmark）是麻省州立大学波士顿校区的研究人员定义的基于现实商业应用的数据模型，业界公认用来模拟决策支持类应用，比较公正和中立。学术界和工业界普遍采用它来评价决策支持技术方面应用的性能。SSB 由 TPC（Transaction Processing Performance Council，事务处理性能委员会）发布的 TPC-H 标准改进而来。它将 TP">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://andrewei1316.github.io/images/star-schema-benchmark/figure_1.2_ssb_schema.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/star-schema-benchmark/Table_3.1_FF_Analysis_of_Queries_in_Section_3.1.png">
+<meta property="article:published_time" content="2020-12-12T05:28:55.000Z">
+<meta property="article:modified_time" content="2020-12-13T06:34:11.522Z">
+<meta property="article:author" content="Andrewei">
+<meta property="article:tag" content="olap">
+<meta property="article:tag" content="benchmark">
+<meta property="article:tag" content="ssb">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://andrewei1316.github.io/images/star-schema-benchmark/figure_1.2_ssb_schema.png">
+
+<link rel="canonical" href="https://andrewei1316.github.io/2020/12/12/star-schema-benchmark/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>《Star Schema Benchmark》阅读笔记 | Andrewei's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Andrewei's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Andrewei's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/andrewei1316" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://andrewei1316.github.io/2020/12/12/star-schema-benchmark/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpg">
+      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="description" content="There's no feat, but what we make.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Andrewei's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          《Star Schema Benchmark》阅读笔记
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-12-12 13:28:55" itemprop="dateCreated datePublished" datetime="2020-12-12T13:28:55+08:00">2020-12-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-12-13 14:34:11" itemprop="dateModified" datetime="2020-12-13T14:34:11+08:00">2020-12-13</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/olap/" itemprop="url" rel="index"><span itemprop="name">olap</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/olap/benchmark/" itemprop="url" rel="index"><span itemprop="name">benchmark</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p><code>SSB</code>（Star Schema Benchmark）是麻省州立大学波士顿校区的研究人员定义的基于现实商业应用的数据模型，业界公认用来模拟决策支持类应用，比较公正和中立。学术界和工业界普遍采用它来评价决策支持技术方面应用的性能。<br><code>SSB</code> 由 <code>TPC</code>（Transaction Processing Performance Council，事务处理性能委员会）发布的 <code>TPC-H</code> 标准改进而来。它将 <code>TPC-H</code> 的雪花模型改为星型模型，将基准查询由 <code>TPC-H</code> 的复杂 <code>Ad-Hoc</code> 查询改为了结构更固定的 <code>OLAP</code> 查询。</p>
+<blockquote>
+<p>事务处理性能委员会（ Transaction Processing Performance Council ），是由数10家会员公司创建的非盈利组织，总部设在美国。该组织对全世界开放，但迄今为止，绝大多数会员都是美、日、西欧的大公司。TPC的成员主要是计算机软硬件厂家，而非计算机用户，它的功能是制定商务应用基准程序（Benchmark）的标准规范、性能和价格度量，并管理测试结果的发布。</p>
+<p>引用自百度百科 <a target="_blank" rel="noopener" href="https://baike.baidu.com/item/TPC/1814556">TPC （事务处理性能委员会）</a></p>
+</blockquote>
+<p>不使用 <code>TPC-H</code> 的原因是，想要提供更普适的功能覆盖（Functional Coverage）和选择覆盖（Selectivity Coverage）：</p>
+<ol>
+<li>功能覆盖（Functional Coverage）：尽可能的选用跨多个表的查询，来贴近实际使用情况</li>
+<li>选择覆盖（Selectivity Coverage）：通过维度表的条件来过滤事实表，并使得过滤后的结果集相对较少</li>
+</ol>
+<p>几个概念：</p>
+<ol>
+<li>SF（Scale Factor）：生成测试数据集时传入的数据量规模因子，决定了各表最终生成的行数。</li>
+<li>FF（Filter Factor）：每个 WHERE 过滤条件筛选出一部分行，被筛选出的行数占过滤前行数的比例叫做 FF。在过滤列彼此独立的条件下，表的FF为该表上各个过滤条件FF的乘积。</li>
+</ol>
+<a id="more"></a>
+
+<h2 id="表结构"><a href="#表结构" class="headerlink" title="表结构"></a>表结构</h2><p><img src="/images/star-schema-benchmark/figure_1.2_ssb_schema.png" alt="Figure1.2 SSB Schema"></p>
+<p><code>TPC-H</code> 和 <code>SSB</code> 中所有表的规模都从给定的 <code>SF=1</code> 到 <code>SF=10</code> ，通常表的规模是 <code>SF</code> 的倍数。</p>
+<h3 id="LINEORDER-事实表"><a href="#LINEORDER-事实表" class="headerlink" title="LINEORDER 事实表"></a>LINEORDER 事实表</h3><p>事实表合并了在 TPC-H 中的 <code>LINEITEM</code> 和 <code>ORDERS</code> 表，更加符合数据仓库的标准，减少了在查询过程中不必要的 <code>join</code> 计算。</p>
+<p>规模：$SF*6,000,000$</p>
+<h4 id="Schema-描述"><a href="#Schema-描述" class="headerlink" title="Schema 描述"></a>Schema 描述</h4><table>
+<thead>
+<tr>
+<th>字段</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>LO_ORDERKEY</td>
+<td>numeric (int up to SF 300) first 8 of each 32 keys populated</td>
+</tr>
+<tr>
+<td>LO_LINENUMBER</td>
+<td>numeric 1-7</td>
+</tr>
+<tr>
+<td>LO_CUSTKEY</td>
+<td>numeric identifier FK to C_CUSTKEY</td>
+</tr>
+<tr>
+<td>LO_PARTKEY</td>
+<td>identifier FK to P_PARTKEY</td>
+</tr>
+<tr>
+<td>LO_SUPPKEY</td>
+<td>numeric identifier FK to S_SUPPKEY</td>
+</tr>
+<tr>
+<td>LO_ORDERDATE</td>
+<td>identifier FK to D_DATEKEY</td>
+</tr>
+<tr>
+<td>LO_ORDERPRIORITY</td>
+<td>fixed text, size 15</td>
+</tr>
+<tr>
+<td>LO_SHIPPRIORITY</td>
+<td>fixed text, size 1</td>
+</tr>
+<tr>
+<td>LO_QUANTITY</td>
+<td>numeric 1-50 (for PART)</td>
+</tr>
+<tr>
+<td>LO_EXTENDEDPRICE</td>
+<td>numeric ≤ 55,450 (for PART)</td>
+</tr>
+<tr>
+<td>LO_ORDTOTALPRICE</td>
+<td>numeric ≤ 388,000 (ORDER)</td>
+</tr>
+<tr>
+<td>LO_DISCOUNT</td>
+<td>numeric 0-10 (for PART, percent)</td>
+</tr>
+<tr>
+<td>LO_REVENUE</td>
+<td>numeric (for PART: (lo_extendedprice*(100-lo_discnt))/100)</td>
+</tr>
+<tr>
+<td>LO_SUPPLYCOST</td>
+<td>numeric (for PART)</td>
+</tr>
+<tr>
+<td>LO_TAX</td>
+<td>numeric 0-8 (for PART)</td>
+</tr>
+<tr>
+<td>LO_COMMITDATE</td>
+<td>FK to D_DATEKEY</td>
+</tr>
+<tr>
+<td>LO_SHIPMODE</td>
+<td>fixed text, size 10</td>
+</tr>
+<tr>
+<td>Compound Primary Key: LO_ORDERKEY, LO_LINENUMBER</td>
+<td></td>
+</tr>
+</tbody></table>
+<h4 id="建表-SQL"><a href="#建表-SQL" class="headerlink" title="建表 SQL"></a>建表 SQL</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> LINEORDER </span><br><span class="line">(</span><br><span class="line">  LO_ORDERKEY          <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  LO_LINENUMBER        <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  LO_CUSTKEY           <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  LO_PARTKEY           <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  LO_SUPPKEY           <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  LO_ORDERDATE         <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  LO_ORDERPRIORITY     <span class="built_in">VARCHAR</span>(<span class="number">15</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  LO_SHIPPRIORITY      <span class="built_in">VARCHAR</span>(<span class="number">1</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  LO_QUANTITY          <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  LO_EXTENDEDPRICE     <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  LO_ORDERTOTALPRICE   <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  LO_DISCOUNT          <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  LO_REVENUE           <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  LO_SUPPLYCOST        <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  LO_TAX               <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  LO_COMMITDATE        <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  LO_SHIPMODE          <span class="built_in">VARCHAR</span>(<span class="number">10</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h3 id="PART-维度表"><a href="#PART-维度表" class="headerlink" title="PART 维度表"></a>PART 维度表</h3><p>规模：$ 200,000*floor(1+log2SF)$</p>
+<h4 id="Schema-描述-1"><a href="#Schema-描述-1" class="headerlink" title="Schema 描述"></a>Schema 描述</h4><table>
+<thead>
+<tr>
+<th>字段</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>P_PARTKEY</td>
+<td>identifier</td>
+</tr>
+<tr>
+<td>P_NAME</td>
+<td>variable text, size 22 (Not unique)</td>
+</tr>
+<tr>
+<td>P_MFGR</td>
+<td>fixed text, size 6 (MFGR#1-5, CARD = 5)</td>
+</tr>
+<tr>
+<td>P_CATEGORY</td>
+<td>fixed text, size 7 (‘MFGR#’||1-5||1-5: CARD = 25)</td>
+</tr>
+<tr>
+<td>P_BRAND1</td>
+<td>fixed text, size 9 (P_CATEGORY||1-40: CARD = 1000)</td>
+</tr>
+<tr>
+<td>P_COLOR</td>
+<td>variable text, size 11 (CARD = 94)</td>
+</tr>
+<tr>
+<td>P_TYPE</td>
+<td>variable text, size 25 (CARD = 150)</td>
+</tr>
+<tr>
+<td>P_SIZE</td>
+<td>numeric 1-50 (CARD = 50)</td>
+</tr>
+<tr>
+<td>P_CONTAINER</td>
+<td>fixed text, size 10 (CARD = 40)</td>
+</tr>
+<tr>
+<td>Primary Key: P_PARTKEY</td>
+<td></td>
+</tr>
+</tbody></table>
+<h4 id="建表-SQL-1"><a href="#建表-SQL-1" class="headerlink" title="建表 SQL"></a>建表 SQL</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> PART </span><br><span class="line">(</span><br><span class="line">  P_PARTKEY     <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  P_NAME        <span class="built_in">VARCHAR</span>(<span class="number">22</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  P_MFGR        <span class="built_in">VARCHAR</span>(<span class="number">6</span>),</span><br><span class="line">  P_CATEGORY    <span class="built_in">VARCHAR</span>(<span class="number">7</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  P_BRAND1      <span class="built_in">VARCHAR</span>(<span class="number">9</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  P_COLOR       <span class="built_in">VARCHAR</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  P_TYPE        <span class="built_in">VARCHAR</span>(<span class="number">25</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  P_SIZE        <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  P_CONTAINER   <span class="built_in">VARCHAR</span>(<span class="number">10</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h3 id="SUPPLIER-维度表"><a href="#SUPPLIER-维度表" class="headerlink" title="SUPPLIER 维度表"></a>SUPPLIER 维度表</h3><p>规模：$SF*2,000$</p>
+<h4 id="Schema-描述-2"><a href="#Schema-描述-2" class="headerlink" title="Schema 描述"></a>Schema 描述</h4><table>
+<thead>
+<tr>
+<th>字段</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>S_SUPPKEY</td>
+<td>numeric identifier</td>
+</tr>
+<tr>
+<td>S_NAME</td>
+<td>fixed text, size 25: ‘Supplier’||S_SUPPKEY</td>
+</tr>
+<tr>
+<td>S_ADDRESS</td>
+<td>variable text, size 25 (city below)</td>
+</tr>
+<tr>
+<td>S_CITY</td>
+<td>fixed text, size 10 (10/nation:</td>
+</tr>
+<tr>
+<td>S_NATION_PREFI</td>
+<td>||(0-9)</td>
+</tr>
+<tr>
+<td>S_NATION</td>
+<td>fixed text, size 15 (25 values, longest UNITED KINGDOM)</td>
+</tr>
+<tr>
+<td>S_REGION</td>
+<td>fixed text, size 12 (5 values: longest MIDDLE EAST)</td>
+</tr>
+<tr>
+<td>S_PHONE</td>
+<td>fixed text, size 15 (many values, format: 43-617-354-1222)</td>
+</tr>
+<tr>
+<td>Primary Key: S_SUPPKEY</td>
+<td></td>
+</tr>
+</tbody></table>
+<h4 id="建表-SQL-2"><a href="#建表-SQL-2" class="headerlink" title="建表 SQL"></a>建表 SQL</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> SUPPLIER</span><br><span class="line">(</span><br><span class="line">  S_SUPPKEY   <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  S_NAME      <span class="built_in">VARCHAR</span>(<span class="number">25</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  S_ADDRESS   <span class="built_in">VARCHAR</span>(<span class="number">25</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  S_CITY      <span class="built_in">VARCHAR</span>(<span class="number">10</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  S_NATION    <span class="built_in">VARCHAR</span>(<span class="number">15</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  S_REGION    <span class="built_in">VARCHAR</span>(<span class="number">12</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  S_PHONE     <span class="built_in">VARCHAR</span>(<span class="number">15</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h3 id="CUSTOMER-维度表"><a href="#CUSTOMER-维度表" class="headerlink" title="CUSTOMER 维度表"></a>CUSTOMER 维度表</h3><p>规模：$SF*30,000$</p>
+<h4 id="Schema-描述-3"><a href="#Schema-描述-3" class="headerlink" title="Schema 描述"></a>Schema 描述</h4><table>
+<thead>
+<tr>
+<th>字段</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>C_CUSTKEY</td>
+<td>numeric identifier</td>
+</tr>
+<tr>
+<td>C_NAME</td>
+<td>variable text, size 25 ‘Cutomer’||C_CUSTKEY</td>
+</tr>
+<tr>
+<td>C_ADDRESS</td>
+<td>variable text, size 25 (city below)</td>
+</tr>
+<tr>
+<td>C_CITY</td>
+<td>fixed text, size 10 (10/nation:</td>
+</tr>
+<tr>
+<td>C_NATION_PREFI</td>
+<td>||(0-9)</td>
+</tr>
+<tr>
+<td>C_NATION</td>
+<td>fixed text, size 15 (25 values, longest UNITED KINGDOM)</td>
+</tr>
+<tr>
+<td>C_REGION</td>
+<td>fixed text, size 12 (5 values: longest MIDDLE EAST)</td>
+</tr>
+<tr>
+<td>C_PHONE</td>
+<td>fixed text, size 15 (many values, format: 43-617-354-1222)</td>
+</tr>
+<tr>
+<td>C_MKTSEGMENT</td>
+<td>fixed text, size 10 (longest is AUTOMOBILE)</td>
+</tr>
+<tr>
+<td>Primary Key: C_CUSTKEY</td>
+<td></td>
+</tr>
+</tbody></table>
+<h4 id="建表-SQL-3"><a href="#建表-SQL-3" class="headerlink" title="建表 SQL"></a>建表 SQL</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> CUSTOMER</span><br><span class="line">(</span><br><span class="line">  C_CUSTKEY      <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  C_NAME         <span class="built_in">VARCHAR</span>(<span class="number">25</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  C_ADDRESS      <span class="built_in">VARCHAR</span>(<span class="number">25</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  C_CITY         <span class="built_in">VARCHAR</span>(<span class="number">10</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  C_NATION       <span class="built_in">VARCHAR</span>(<span class="number">15</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  C_REGION       <span class="built_in">VARCHAR</span>(<span class="number">12</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  C_PHONE        <span class="built_in">VARCHAR</span>(<span class="number">15</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  C_MKTSEGMENT   <span class="built_in">VARCHAR</span>(<span class="number">10</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h3 id="DATE-维度表"><a href="#DATE-维度表" class="headerlink" title="DATE 维度表"></a>DATE 维度表</h3><p>规模：7 years of days</p>
+<h4 id="Schema-描述-4"><a href="#Schema-描述-4" class="headerlink" title="Schema 描述"></a>Schema 描述</h4><table>
+<thead>
+<tr>
+<th>字段</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>D_DATEKEY</td>
+<td>identifier, unique id – e.g. 19980327 (what we use)</td>
+</tr>
+<tr>
+<td>D_DATE</td>
+<td>fixed text, size 18: e.g. December 22, 1998</td>
+</tr>
+<tr>
+<td>D_DAYOFWEEK</td>
+<td>fixed text, size 8, Sunday..Saturday</td>
+</tr>
+<tr>
+<td>D_MONTH</td>
+<td>fixed text, size 9: January, …, December</td>
+</tr>
+<tr>
+<td>D_YEAR</td>
+<td>unique value 1992-1998</td>
+</tr>
+<tr>
+<td>D_YEARMONTHNUM</td>
+<td>numeric (YYYYMM)</td>
+</tr>
+<tr>
+<td>D_YEARMONTH</td>
+<td>fixed text, size 7: (e.g.: Mar1998）</td>
+</tr>
+<tr>
+<td>D_DAYNUMINWEEK</td>
+<td>numeric 1-7</td>
+</tr>
+<tr>
+<td>D_DAYNUMINMONTH</td>
+<td>numeric 1-31</td>
+</tr>
+<tr>
+<td>D_DAYNUMINYEAR</td>
+<td>numeric 1-366</td>
+</tr>
+<tr>
+<td>D_MONTHNUMINYEAR</td>
+<td>numeric 1-12</td>
+</tr>
+<tr>
+<td>D_WEEKNUMINYEAR</td>
+<td>numeric 1-53</td>
+</tr>
+<tr>
+<td>D_SELLINGSEASON</td>
+<td>text, size 12 (e.g.: Christmas)</td>
+</tr>
+<tr>
+<td>D_LASTDAYINWEEKFL</td>
+<td>1 bit</td>
+</tr>
+<tr>
+<td>D_LASTDAYINMONTHFL</td>
+<td>1 bit</td>
+</tr>
+<tr>
+<td>D_HOLIDAYFL</td>
+<td>1 bit</td>
+</tr>
+<tr>
+<td>D_WEEKDAYFL</td>
+<td>1 bit</td>
+</tr>
+<tr>
+<td>Primary Key: D_DATEKEY</td>
+<td></td>
+</tr>
+</tbody></table>
+<h4 id="建表-SQL-4"><a href="#建表-SQL-4" class="headerlink" title="建表 SQL"></a>建表 SQL</h4><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> DATES (</span><br><span class="line"> D_DATEKEY <span class="built_in">INTEGER</span>,</span><br><span class="line"> D_DATE <span class="built_in">VARCHAR</span>(<span class="number">18</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line"> D_DAYOFWEEK <span class="built_in">VARCHAR</span>(<span class="number">18</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line"> D_MONTH <span class="built_in">VARCHAR</span>(<span class="number">9</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line"> D_YEAR <span class="built_in">INTEGER</span> <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line"> D_YEARMONTHNUM <span class="built_in">INTEGER</span>,</span><br><span class="line"> D_YEARMONTH <span class="built_in">VARCHAR</span>(<span class="number">7</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line"> D_DAYNUMINWEEK <span class="built_in">INTEGER</span>,</span><br><span class="line"> D_DAYNUMINMONTH <span class="built_in">INTEGER</span>,</span><br><span class="line"> D_DAYNUMINYEAR <span class="built_in">INTEGER</span>,</span><br><span class="line"> D_MONTHNUMINYEAR <span class="built_in">INTEGER</span>,</span><br><span class="line"> D_WEEKNUMINYEAR <span class="built_in">INTEGER</span>,</span><br><span class="line"> D_SELLINGSEASON <span class="built_in">VARCHAR</span>(<span class="number">12</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line"> D_LASTDAYINWEEKFL <span class="built_in">INTEGER</span>,</span><br><span class="line"> D_LASTDAYINMONTHFL <span class="built_in">INTEGER</span>,</span><br><span class="line"> D_HOLIDAYFL <span class="built_in">INTEGER</span>,</span><br><span class="line"> D_WEEKDAYFL <span class="built_in">INTEGER</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h2 id="查询语句"><a href="#查询语句" class="headerlink" title="查询语句"></a>查询语句</h2><p>相对于 <code>TPC-H</code> ，<code>SSB</code> 简化了模型，减少了部分 <code>Table</code> 并增加了新的 <code>Table</code> 。同时在 <code>SQL</code> 上，<code>SSB</code> 在 <code>TPC-H</code> 的基础上，使用尽可能少的 <code>SQL</code> 来得出完整的结论。</p>
+<h3 id="查询语句定义"><a href="#查询语句定义" class="headerlink" title="查询语句定义"></a>查询语句定义</h3><h4 id="Q1"><a href="#Q1" class="headerlink" title="Q1"></a>Q1</h4><p>第一类查询的模板如下</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">sum</span>(lo_extendedprice * lo_discount) <span class="keyword">as</span> revenue</span><br><span class="line"> <span class="keyword">from</span> lineorder, <span class="built_in">date</span></span><br><span class="line"> <span class="keyword">where</span> lo_orderdate = d_datekey</span><br><span class="line">  <span class="keyword">and</span> [DATE_FILTER]</span><br><span class="line">  <span class="keyword">and</span> [LO_DISCOUNT_FILTER]</span><br><span class="line">  <span class="keyword">and</span> [LO_QUANTITY_FILTER]; </span><br></pre></td></tr></table></figure>
+
+<p>其场景是：在一个给定的 <code>时间范围</code> 内，过滤 <code>折扣</code> 和 <code>销售数量</code> 在某个范围内的订单，计算所带来的的 <code>销售收入</code>  <code>之和</code>。</p>
+<p>该场景从一个维度表对数据进行限制。</p>
+<p>该场景拓展出 3 个查询语句，各个语句过滤出来的数据都没有交集，可以有效避免系统缓存带来的影响（缓存可能会造成后访问的数据没有磁盘 IO 开销）。</p>
+<h5 id="Q1-1"><a href="#Q1-1" class="headerlink" title="Q1.1"></a>Q1.1</h5><p>为上述变量赋值</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">DATE_FILTER -&gt; d_year = 1993</span><br><span class="line">LO_DISCOUNT_FILTER -&gt; lo_discount between 1 and 3</span><br><span class="line">LO_QUANTITY_FILTER -&gt; lo_quantity &lt; 25</span><br></pre></td></tr></table></figure>
+
+<p>完整的 <code>SQL</code> 为</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">sum</span>(lo_extendedprice*lo_discount) <span class="keyword">as</span> revenue</span><br><span class="line"> <span class="keyword">from</span> lineorder, <span class="built_in">date</span></span><br><span class="line"> <span class="keyword">where</span> lo_orderdate = d_datekey</span><br><span class="line">  <span class="keyword">and</span> d_year = <span class="number">1993</span></span><br><span class="line">  <span class="keyword">and</span> lo_discount <span class="keyword">between</span> <span class="number">1</span> <span class="keyword">and</span> <span class="number">3</span></span><br><span class="line">  <span class="keyword">and</span> lo_quantity &lt; <span class="number">25</span>;</span><br></pre></td></tr></table></figure>
+
+<p>其中：$FF = (1/7) * (3/11) * 0.5 = 0.0194805$ ，对于 <code>SF = 1</code> 被过滤出来的 <code>LINEORDER</code> 数量为 $0.0194805 * 6,000,000 ≈ 116,883$。</p>
+<h5 id="Q1-2"><a href="#Q1-2" class="headerlink" title="Q1.2"></a>Q1.2</h5><p>为上述变量赋值</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">DATE_FILTER -&gt; d_yearmonthnum = 199401</span><br><span class="line">LO_DISCOUNT_FILTER -&gt; lo_discount between 4 and 6</span><br><span class="line">LO_QUANTITY_FILTER -&gt; lo_quantity between 26 and 35</span><br></pre></td></tr></table></figure>
+
+<p>完整的 <code>SQL</code> 为</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">sum</span>(lo_extendedprice*lo_discount) <span class="keyword">as</span> revenue</span><br><span class="line"> <span class="keyword">from</span> lineorder, <span class="built_in">date</span></span><br><span class="line"> <span class="keyword">where</span> lo_orderdate = d_datekey</span><br><span class="line">  <span class="keyword">and</span> d_yearmonthnum = <span class="number">199401</span></span><br><span class="line">  <span class="keyword">and</span> lo_discount between4 <span class="keyword">and</span> <span class="number">6</span></span><br><span class="line">  <span class="keyword">and</span> lo_quantity <span class="keyword">between</span> <span class="number">26</span> <span class="keyword">and</span> <span class="number">35</span>;</span><br></pre></td></tr></table></figure>
+
+<p>其中：$FF = (1/84) * (3/11) * 0.2 = 0.00064935$ ，对于 <code>SF = 1</code> 被过滤出来的 <code>LINEORDER</code> 数量为 $0.00064935 * 6,000,000 ≈ 3896$。</p>
+<h5 id="Q1-3"><a href="#Q1-3" class="headerlink" title="Q1.3"></a>Q1.3</h5><p>为上述变量赋值</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">DATE_FILTER -&gt; d_weeknuminyear = 6 and d_year = 1994</span><br><span class="line">LO_DISCOUNT_FILTER -&gt; lo_discount between 5 and 7</span><br><span class="line">LO_QUANTITY_FILTER -&gt; lo_quantity between 26 and 35</span><br></pre></td></tr></table></figure>
+
+<p>完整的 <code>SQL</code> 为</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">sum</span>(lo_extendedprice*lo_discount) <span class="keyword">as</span> revenue</span><br><span class="line"> <span class="keyword">from</span> lineorder, <span class="built_in">date</span></span><br><span class="line"> <span class="keyword">where</span> lo_orderdate = d_datekey</span><br><span class="line">  <span class="keyword">and</span> d_weeknuminyear = <span class="number">6</span></span><br><span class="line">  <span class="keyword">and</span> d_year = <span class="number">1994</span></span><br><span class="line">  <span class="keyword">and</span> lo_discount <span class="keyword">between</span> <span class="number">5</span> <span class="keyword">and</span> <span class="number">7</span></span><br><span class="line">  <span class="keyword">and</span> lo_quantity <span class="keyword">between</span> <span class="number">26</span> <span class="keyword">and</span> <span class="number">35</span>;</span><br></pre></td></tr></table></figure>
+
+<p>其中：$FF = (1/364) * (3/11) * 0.1 = 0.000075$，对于 <code>SF = 1</code> 被过滤出来的 <code>LINEORDER</code> 数量为 $0.000075 * 6,000,000 ≈ 450$。</p>
+<h4 id="Q2"><a href="#Q2" class="headerlink" title="Q2"></a>Q2</h4><p>第二类查询语句的模板如下</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">sum</span>(lo_revenue), d_year, p_brand1</span><br><span class="line"> <span class="keyword">from</span> lineorder, <span class="built_in">date</span>, part, supplier</span><br><span class="line"> <span class="keyword">where</span> lo_orderdate = d_datekey</span><br><span class="line">  <span class="keyword">and</span> lo_partkey = p_partkey</span><br><span class="line">  <span class="keyword">and</span> lo_suppkey = s_suppkey</span><br><span class="line">  <span class="keyword">and</span> [PART_FILTER]</span><br><span class="line">  <span class="keyword">and</span> [S_REGION_FILTER]</span><br><span class="line"> <span class="keyword">group</span> <span class="keyword">by</span> d_year, p_brand1</span><br><span class="line"> <span class="keyword">order</span> <span class="keyword">by</span> d_year, p_brand1; </span><br></pre></td></tr></table></figure>
+
+<p>其场景是：在给定的 <code>供应商</code> 和 <code>分类</code> 条件下，每个 <code>品牌</code> 每 <code>年</code> 带来的 <code>收入之和</code>。</p>
+<p>该场景从两个维度表对数据进行限制。</p>
+<p>这个场景也拓展了 3 个查询，这 3 个查询过滤出来的数据互相没有交集，且与 <code>Q1</code> 中的数据没有交集。</p>
+<h5 id="Q2-1"><a href="#Q2-1" class="headerlink" title="Q2.1"></a>Q2.1</h5><p>为上述变量赋值</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">PART_FILTER -&gt; p_category = &#x27;MFGR#12&#x27;</span><br><span class="line">S_REGION_FILTER -&gt; s_region = &#x27;AMERICA&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>完整的 <code>SQL</code> 为</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">sum</span>(lo_revenue), d_year, p_brand1</span><br><span class="line"><span class="keyword">from</span> lineorder, <span class="built_in">date</span>, part, supplier</span><br><span class="line"> <span class="keyword">where</span> lo_orderdate = d_datekey</span><br><span class="line">  <span class="keyword">and</span> lo_partkey = p_partkey</span><br><span class="line">  <span class="keyword">and</span> lo_suppkey = s_suppkey</span><br><span class="line">  <span class="keyword">and</span> p_category = <span class="string">&#x27;MFGR#12&#x27;</span></span><br><span class="line">  <span class="keyword">and</span> s_region = <span class="string">&#x27;AMERICA&#x27;</span></span><br><span class="line"> <span class="keyword">group</span> <span class="keyword">by</span> d_year, p_brand1</span><br><span class="line"> <span class="keyword">order</span> <span class="keyword">by</span> d_year, p_brand1;</span><br></pre></td></tr></table></figure>
+
+<p>其中：$FF = (1/25) * (1/5) = 1/125$，对于 <code>SF = 1</code> 被过滤出来的 <code>LINEORDER</code> 数量为 $(1/125) * 6,000,000 ≈ 48,000$。</p>
+<h5 id="Q2-2"><a href="#Q2-2" class="headerlink" title="Q2.2"></a>Q2.2</h5><p>为上述变量赋值</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">PART_FILTER -&gt; p_brand1 between &#x27;MFGR#2221&#x27; and &#x27;MFGR#2228&#x27;</span><br><span class="line">S_REGION_FILTER -&gt; s_region = &#x27;ASIA&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>完整的 <code>SQL</code> 为</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">sum</span>(lo_revenue), d_year, p_brand1</span><br><span class="line"> <span class="keyword">from</span> lineorder, <span class="built_in">date</span>, part, supplier</span><br><span class="line"> <span class="keyword">where</span> lo_orderdate = d_datekey</span><br><span class="line">  <span class="keyword">and</span> lo_partkey = p_partkey</span><br><span class="line">  <span class="keyword">and</span> lo_suppkey = s_suppkey</span><br><span class="line">  <span class="keyword">and</span> p_brand1 <span class="keyword">between</span> <span class="string">&#x27;MFGR#2221&#x27;</span> <span class="keyword">and</span> <span class="string">&#x27;MFGR#2228&#x27;</span></span><br><span class="line">  <span class="keyword">and</span> s_region = <span class="string">&#x27;ASIA&#x27;</span></span><br><span class="line"> <span class="keyword">group</span> <span class="keyword">by</span> d_year, p_brand1</span><br><span class="line"> <span class="keyword">order</span> <span class="keyword">by</span> d_year, p_brand1;</span><br></pre></td></tr></table></figure>
+
+<p>其中：$FF = (1/125) * (1/5) = 1/625$，对于 <code>SF = 1</code> 被过滤出来的 <code>LINEORDER</code> 数量为 $(1/625) * 6,000,000 ≈ 9600$。</p>
+<h5 id="Q2-3"><a href="#Q2-3" class="headerlink" title="Q2.3"></a>Q2.3</h5><p>为上述变量赋值</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">PART_FILTER -&gt; p_brand1 = &#x27;MFGR#2221&#x27;</span><br><span class="line">S_REGION_FILTER -&gt; s_region = &#x27;EUROPE&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>完整的 <code>SQL</code> 为</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">sum</span>(lo_revenue), d_year, p_brand1</span><br><span class="line"> <span class="keyword">from</span> lineorder, <span class="built_in">date</span>, part, supplier</span><br><span class="line"> <span class="keyword">where</span> lo_orderdate = d_datekey</span><br><span class="line">  <span class="keyword">and</span> lo_partkey = p_partkey</span><br><span class="line">  <span class="keyword">and</span> lo_suppkey = s_suppkey</span><br><span class="line">  <span class="keyword">and</span> p_brand1 = <span class="string">&#x27;MFGR#2221&#x27;</span></span><br><span class="line">  <span class="keyword">and</span> s_region = <span class="string">&#x27;EUROPE&#x27;</span></span><br><span class="line"> <span class="keyword">group</span> <span class="keyword">by</span> d_year, p_brand1</span><br><span class="line"> <span class="keyword">order</span> <span class="keyword">by</span> d_year, p_brand1;</span><br></pre></td></tr></table></figure>
+
+<p>其中：$FF = (1/1000) * (1/5) = 1/5000$，对于 <code>SF = 1</code> 被过滤出来的 <code>LINEORDER</code> 数量为 $(1/5000) * 6,000,000 ≈ 1200$。</p>
+<h4 id="Q3"><a href="#Q3" class="headerlink" title="Q3"></a>Q3</h4><p>第三类查询语句的模板如下</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> c_nation, s_nation, d_year, <span class="keyword">sum</span>(lo_revenue) <span class="keyword">as</span> revenue</span><br><span class="line"> <span class="keyword">from</span> customer, lineorder, supplier, <span class="built_in">date</span></span><br><span class="line"> <span class="keyword">where</span> lo_custkey = c_custkey</span><br><span class="line">  <span class="keyword">and</span> lo_suppkey = s_suppkey</span><br><span class="line">  <span class="keyword">and</span> lo_orderdate = d_datekey</span><br><span class="line">  <span class="keyword">and</span> [CUSTOMOR_FILTER]</span><br><span class="line">  <span class="keyword">and</span> [SUPPLIER_FILTER]</span><br><span class="line">  <span class="keyword">and</span> [DATE_FILTER]</span><br><span class="line"> <span class="keyword">group</span> <span class="keyword">by</span> c_nation, s_nation, d_year</span><br><span class="line"> <span class="keyword">order</span> <span class="keyword">by</span> d_year <span class="keyword">asc</span>, revenue <span class="keyword">desc</span>;</span><br></pre></td></tr></table></figure>
+
+<p>其场景是：在给定的 <code>供应商</code> 、<code>客户</code> 和 <code>时间</code> 条件下，求出每个 <code>客户所在国家</code>、<code>供应商所在国家</code>、<code> 每年</code> 的 <code>收入之和</code>。</p>
+<p>该场景从三个维度表对数据进行限制。</p>
+<p>这个场景拓展了 4 个查询，除了 <code>Q3.3</code> 、<code>Q3.4</code> 之外，其他查询过滤出来的数据互相没有交集，且与 <code>Q1</code>、<code>Q2</code> 中的数据没有交集。</p>
+<h5 id="Q3-1"><a href="#Q3-1" class="headerlink" title="Q3.1"></a>Q3.1</h5><p>为上述变量赋值</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">CUSTOMOR_FILTER -&gt; c_region = &#x27;ASIA&#x27;</span><br><span class="line">SUPPLIER_FILTER -&gt; s_region = &#x27;ASIA&#x27;</span><br><span class="line">DATE_FILTER -&gt; d_year &gt;= 1992 and d_year &lt;= 1997</span><br></pre></td></tr></table></figure>
+
+<p>完整的 <code>SQL</code> 为</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> c_nation, s_nation, d_year, <span class="keyword">sum</span>(lo_revenue) <span class="keyword">as</span> revenue</span><br><span class="line"> <span class="keyword">from</span> customer, lineorder, supplier, <span class="built_in">date</span></span><br><span class="line"> <span class="keyword">where</span> lo_custkey = c_custkey</span><br><span class="line">  <span class="keyword">and</span> lo_suppkey = s_suppkey</span><br><span class="line">  <span class="keyword">and</span> lo_orderdate = d_datekey</span><br><span class="line">  <span class="keyword">and</span> c_region = <span class="string">&#x27;ASIA&#x27;</span></span><br><span class="line">  <span class="keyword">and</span> s_region = <span class="string">&#x27;ASIA&#x27;</span></span><br><span class="line">  <span class="keyword">and</span> d_year &gt;= <span class="number">1992</span> <span class="keyword">and</span> d_year &lt;= <span class="number">1997</span></span><br><span class="line"> <span class="keyword">group</span> <span class="keyword">by</span> c_nation, s_nation, d_year</span><br><span class="line"> <span class="keyword">order</span> <span class="keyword">by</span> d_year <span class="keyword">asc</span>, revenue <span class="keyword">desc</span>;</span><br></pre></td></tr></table></figure>
+
+<p>其中：$FF = (1/5) * (1/5) * (6/7) = 6/175$，对于 <code>SF = 1</code> 被过滤出来的 <code>LINEORDER</code> 数量为 $(6/175) * 6,000,000 ≈ 205,714$。</p>
+<h5 id="Q3-2"><a href="#Q3-2" class="headerlink" title="Q3.2"></a>Q3.2</h5><p>为上述变量赋值</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">CUSTOMOR_FILTER -&gt; c_nation = &#x27;UNITED STATES&#x27;</span><br><span class="line">SUPPLIER_FILTER -&gt; s_nation = &#x27;UNITED STATES&#x27;</span><br><span class="line">DATE_FILTER -&gt; d_year &gt;= 1992 and d_year &lt;= 1997</span><br></pre></td></tr></table></figure>
+
+<p>完整的 <code>SQL</code> 为</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> c_city, s_city, d_year, <span class="keyword">sum</span>(lo_revenue) <span class="keyword">as</span> revenue</span><br><span class="line"> <span class="keyword">from</span> customer, lineorder, supplier, <span class="built_in">date</span></span><br><span class="line"> <span class="keyword">where</span> lo_custkey = c_custkey</span><br><span class="line">  <span class="keyword">and</span> lo_suppkey = s_suppkey</span><br><span class="line">  <span class="keyword">and</span> lo_orderdate = d_datekey</span><br><span class="line">  <span class="keyword">and</span> c_nation = <span class="string">&#x27;UNITED STATES&#x27;</span></span><br><span class="line">  <span class="keyword">and</span> s_nation = <span class="string">&#x27;UNITED STATES&#x27;</span></span><br><span class="line">  <span class="keyword">and</span> d_year &gt;= <span class="number">1992</span> <span class="keyword">and</span> d_year &lt;= <span class="number">1997</span></span><br><span class="line"> <span class="keyword">group</span> <span class="keyword">by</span> c_city, s_city, d_year</span><br><span class="line"> <span class="keyword">order</span> <span class="keyword">by</span> d_year <span class="keyword">asc</span>, revenue <span class="keyword">desc</span>;</span><br></pre></td></tr></table></figure>
+
+<p>其中：$FF = (1/25) * (1/25) * (6/7) = 6/4375$，对于 <code>SF = 1</code> 被过滤出来的 <code>LINEORDER</code> 数量为 $(6/4375) * 6,000,000 ≈ 8,228$。</p>
+<h5 id="Q3-3"><a href="#Q3-3" class="headerlink" title="Q3.3"></a>Q3.3</h5><p>为上述变量赋值</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">CUSTOMOR_FILTER -&gt; (c_city=&#x27;UNITED KI1&#x27; or c_city=&#x27;UNITED KI5&#x27;)</span><br><span class="line">SUPPLIER_FILTER -&gt; (s_city=&#x27;UNITED KI1&#x27; or s_city=&#x27;UNITED KI5&#x27;)</span><br><span class="line">DATE_FILTER -&gt; d_year &gt;= 1992 and d_year &lt;= 1997</span><br></pre></td></tr></table></figure>
+
+<p>完整的 <code>SQL</code> 为</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> c_city, s_city, d_year, <span class="keyword">sum</span>(lo_revenue) <span class="keyword">as</span> revenue</span><br><span class="line"> <span class="keyword">from</span> customer, lineorder, supplier, <span class="built_in">date</span></span><br><span class="line"> <span class="keyword">where</span> lo_custkey = c_custkey</span><br><span class="line">  <span class="keyword">and</span> lo_suppkey = s_suppkey</span><br><span class="line">  <span class="keyword">and</span> lo_orderdate = d_datekey</span><br><span class="line">  <span class="keyword">and</span> (c_city=<span class="string">&#x27;UNITED KI1&#x27;</span> <span class="keyword">or</span> c_city=<span class="string">&#x27;UNITED KI5&#x27;</span>)</span><br><span class="line">  <span class="keyword">and</span> (s_city=<span class="string">&#x27;UNITED KI1&#x27;</span> <span class="keyword">or</span> s_city=<span class="string">&#x27;UNITED KI5&#x27;</span>) </span><br><span class="line">  <span class="keyword">and</span> d_year &gt;= <span class="number">1992</span> <span class="keyword">and</span> d_year &lt;= <span class="number">1997</span></span><br><span class="line"> <span class="keyword">group</span> <span class="keyword">by</span> c_city, s_city, d_year</span><br><span class="line"> <span class="keyword">order</span> <span class="keyword">by</span> d_year <span class="keyword">asc</span>, revenue <span class="keyword">desc</span>;</span><br></pre></td></tr></table></figure>
+
+<p>其中：$FF = (1/125) * (1/125) * (6/7) = 6/109375$，对于 <code>SF = 1</code> 被过滤出来的 <code>LINEORDER</code> 数量为 $(6/109375) * 6,000,000 ≈ 329$。</p>
+<h5 id="Q3-4"><a href="#Q3-4" class="headerlink" title="Q3.4"></a>Q3.4</h5><p>为上述变量赋值</p>
+<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">CUSTOMOR_FILTER -&gt; (c_city=&#x27;UNITED KI1&#x27; or c_city=&#x27;UNITED KI5&#x27;)</span><br><span class="line">SUPPLIER_FILTER -&gt; (s_city=&#x27;UNITED KI1&#x27; or s_city=&#x27;UNITED KI5&#x27;)</span><br><span class="line">DATE_FILTER -&gt; d_yearmonth = &#x27;Dec1997&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>完整的 <code>SQL</code> 为</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> c_city, s_city, d_year, <span class="keyword">sum</span>(lo_revenue) <span class="keyword">as</span> revenue</span><br><span class="line"> <span class="keyword">from</span> customer, lineorder, supplier, <span class="built_in">date</span></span><br><span class="line"> <span class="keyword">where</span> lo_custkey = c_custkey</span><br><span class="line">  <span class="keyword">and</span> lo_suppkey = s_suppkey</span><br><span class="line">  <span class="keyword">and</span> lo_orderdate = d_datekey</span><br><span class="line">  <span class="keyword">and</span> (c_city=<span class="string">&#x27;UNITED KI1&#x27;</span> <span class="keyword">or</span> c_city=<span class="string">&#x27;UNITED KI5&#x27;</span>)</span><br><span class="line">  <span class="keyword">and</span> (s_city=<span class="string">&#x27;UNITED KI1&#x27;</span> <span class="keyword">or</span> s_city=<span class="string">&#x27;UNITED KI5&#x27;</span>)</span><br><span class="line">  <span class="keyword">and</span> d_yearmonth = <span class="string">&#x27;Dec1997&#x27;</span></span><br><span class="line"> <span class="keyword">group</span> <span class="keyword">by</span> c_city, s_city, d_year</span><br><span class="line"> <span class="keyword">order</span> <span class="keyword">by</span> d_year <span class="keyword">asc</span>, revenue <span class="keyword">desc</span>;</span><br></pre></td></tr></table></figure>
+
+<p>其中：$FF = (1/125) * (1/125) * (1/84) = 1/1,312,500$，对于 <code>SF = 1</code> 被过滤出来的 <code>LINEORDER</code> 数量为 $(1/1,312,500) * 6,000,000 ≈ 5$。</p>
+<h4 id="Q4"><a href="#Q4" class="headerlink" title="Q4"></a>Q4</h4><p>第四类查询语句的场景是：在给定的 <code>供应商</code> 、<code>客户</code> 、<code>零件</code> 和 <code>时间</code> 条件下，求出每个 <code>客户所在国家</code>、<code>供应商所在国家</code>、<code> 每年</code> 的 <code>利润之和</code>。该场景从四个维度表对数据进行限制。</p>
+<p><code>Q4</code> 的查询结果与 <code>Q1</code>、<code>Q2</code>、<code>Q3</code> 的结果都是没有交集的，不需要担心 <code>Cache</code> 的影响。但是 <code>Q4.2</code>、<code>Q4.3</code> 的结果都是前一次查询的子集，会受到 <code>Cache</code> 的影响，但是这类查询的流程都会具有这样的特点，不可避免。</p>
+<h5 id="Q4-1"><a href="#Q4-1" class="headerlink" title="Q4.1"></a>Q4.1</h5><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> d_year, c_nation, <span class="keyword">sum</span>(lo_revenue - lo_supplycost) <span class="keyword">as</span> profit</span><br><span class="line"> <span class="keyword">from</span> <span class="built_in">date</span>, customer, supplier, part, lineorder</span><br><span class="line"> <span class="keyword">where</span> lo_custkey = c_custkey</span><br><span class="line">  <span class="keyword">and</span> lo_suppkey = s_suppkey</span><br><span class="line">  <span class="keyword">and</span> lo_partkey = p_partkey</span><br><span class="line">  <span class="keyword">and</span> lo_orderdate = d_datekey</span><br><span class="line">  <span class="keyword">and</span> c_region = <span class="string">&#x27;AMERICA&#x27;</span></span><br><span class="line">  <span class="keyword">and</span> s_region = <span class="string">&#x27;AMERICA&#x27;</span></span><br><span class="line">  <span class="keyword">and</span> (p_mfgr = <span class="string">&#x27;MFGR#1&#x27;</span> <span class="keyword">or</span> p_mfgr = <span class="string">&#x27;MFGR#2&#x27;</span>)</span><br><span class="line"> <span class="keyword">group</span> <span class="keyword">by</span> d_year, c_nation</span><br><span class="line"> <span class="keyword">order</span> <span class="keyword">by</span> d_year, c_nation;</span><br></pre></td></tr></table></figure>
+
+<p>其中：$FF = (1/5) * (1/5) * (2/5) = 2/125$，对于 <code>SF = 1</code> 被过滤出来的 <code>LINEORDER</code> 数量为 $(2/125) * 6,000,000 ≈ 96000$。</p>
+<h5 id="Q4-2"><a href="#Q4-2" class="headerlink" title="Q4.2"></a>Q4.2</h5><p>假如通过 <code>Q4.1</code> 的结果，我们发现 <code>1997 ~ 1998</code> 年间，利润增加了 40%。此时，我们需要进一步查看这个时间段内导致利润上涨的具体原因，比如通过 <code>s_nation</code> 和 <code>p_category</code> 分组。</p>
+<p><code>Q4</code> 的结果与 <code>Q1</code>、<code>Q2</code>、<code>Q3</code> 的结果没有交集，但是 <code>Q4.2</code>、<code>Q4.3</code>、<code>Q4.4</code> 每个查询都是前一个查询的子集，这依然会收到 <code>Cache</code> 的影响。但是这个场景的分析都会是这个步骤，这不可避免。</p>
+<p>于是使用下面的 <code>SQL</code></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> d_year, s_nation, p_category, <span class="keyword">sum</span>(lo_revenue - lo_supplycost) <span class="keyword">as</span> profit</span><br><span class="line"> <span class="keyword">from</span> <span class="built_in">date</span>, customer, supplier, part, lineorder</span><br><span class="line"> <span class="keyword">where</span> lo_custkey = c_custkey</span><br><span class="line">  <span class="keyword">and</span> lo_suppkey = s_suppkey</span><br><span class="line">  <span class="keyword">and</span> lo_partkey = p_partkey</span><br><span class="line">  <span class="keyword">and</span> lo_orderdate = d_datekey</span><br><span class="line">  <span class="keyword">and</span> c_region = <span class="string">&#x27;AMERICA&#x27;</span></span><br><span class="line">  <span class="keyword">and</span> s_region = <span class="string">&#x27;AMERICA&#x27;</span></span><br><span class="line">  <span class="keyword">and</span> (d_year = <span class="number">1997</span> <span class="keyword">or</span> d_year = <span class="number">1998</span>)</span><br><span class="line">  <span class="keyword">and</span> (p_mfgr = <span class="string">&#x27;MFGR#1&#x27;</span> <span class="keyword">or</span> p_mfgr = <span class="string">&#x27;MFGR#2&#x27;</span>)</span><br><span class="line"> <span class="keyword">group</span> <span class="keyword">by</span> d_year, s_nation, p_category</span><br><span class="line"> <span class="keyword">order</span> <span class="keyword">by</span> d_year, s_nation, p_category;</span><br></pre></td></tr></table></figure>
+
+<p>其中：$FF = (1/5) * (1/5) * (2/7) * (2/5) = 4/875$，对于 <code>SF = 1</code> 被过滤出来的 <code>LINEORDER</code> 数量为 $(4/875) * 6,000,000 ≈ 27,428$。</p>
+<h5 id="Q4-3"><a href="#Q4-3" class="headerlink" title="Q4.3"></a>Q4.3</h5><p>假如通过 <code>Q4.2</code> 的结果，我们发现 <code>1997 ~ 1998</code> 年间大部分的利润增长都是来自 <code>s_nation = &#39;UNITED STATES&#39;</code> 和 <code>p_category = &#39;MFGR1#4&#39;</code> 。现在我们想要继续下钻到美国的 <code>城市</code>以及零件的 <code>p_brand1</code> 来看细节。</p>
+<p>于是使用下面的 <code>SQL</code></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> d_year, s_city, p_brand1, <span class="keyword">sum</span>(lo_revenue - lo_supplycost) <span class="keyword">as</span> profit</span><br><span class="line"> <span class="keyword">from</span> <span class="built_in">date</span>, customer, supplier, part, lineorder</span><br><span class="line"> <span class="keyword">where</span> lo_custkey = c_custkey</span><br><span class="line">  <span class="keyword">and</span> lo_suppkey = s_suppkey</span><br><span class="line">  <span class="keyword">and</span> lo_partkey = p_partkey</span><br><span class="line">  <span class="keyword">and</span> lo_orderdate = d_datekey</span><br><span class="line">  <span class="keyword">and</span> c_region = <span class="string">&#x27;AMERICA&#x27;</span></span><br><span class="line">  <span class="keyword">and</span> s_nation = <span class="string">&#x27;UNITED STATES&#x27;</span></span><br><span class="line">  <span class="keyword">and</span> (d_year = <span class="number">1997</span> <span class="keyword">or</span> d_year = <span class="number">1998</span>)</span><br><span class="line">  <span class="keyword">and</span> p_category = <span class="string">&#x27;MFGR#14&#x27;</span></span><br><span class="line"> <span class="keyword">group</span> <span class="keyword">by</span> d_year, s_city, p_brand1</span><br><span class="line"> <span class="keyword">order</span> <span class="keyword">by</span> d_year, s_city, p_brand1;</span><br></pre></td></tr></table></figure>
+
+<p>其中：$(1/5) * (1/25) * (2/7) * (1/25) = 2/21875$，对于 <code>SF = 1</code> 被过滤出来的 <code>LINEORDER</code> 数量为 $(2/21875) * 6,000,000 ≈ 549$。</p>
+<h3 id="查询分析"><a href="#查询分析" class="headerlink" title="查询分析"></a>查询分析</h3><p><img src="/images/star-schema-benchmark/Table_3.1_FF_Analysis_of_Queries_in_Section_3.1.png" alt="Table 3.1. FF Analysis of Queries in Section 3.1"></p>
+<p>表中带有下划线的 <code>FF</code> 是每个查询中可以被索引的维度列上最小的 <code>FF</code>。加快可被索引的维度列滤列条件的查询的最佳方法是按这一列对 <code>LINEORDER</code> 进行排序，否则可能无法优化磁盘访问。</p>
+<blockquote>
+<p>这一节没怎么看懂，把原文放在这里</p>
+<p>The underlined FF for each query distinguishes the smallest FF over the indexable dimension column predicate. The most valuable way we can speed up a query which has an indexable dimension column restriction is to sort the LINEORDER by that column; Otherwise, indexes on such columns will probably not limit the number of disk pages that must be accessed. Note that by breaking ties for underlining away from supplier, we can avoid underlines in the supplier city roll-up column in Table 3.1. Thus we can avoid a LINEORDER sort by s_city. The query set suggests sorts by time, part brand roll-up and (customer roll-up, supplier roll-up).</p>
+<p>We see that Q4 shifts from customer-sort to part-sort as best match between Q4.1 and Q4.3. </p>
+</blockquote>
+<h2 id="测试数据"><a href="#测试数据" class="headerlink" title="测试数据"></a>测试数据</h2><p>使用 <a target="_blank" rel="noopener" href="https://github.com/eyalroz/ssb-dbgen">dbgen</a> 可以生成 <code>SSB</code>性能测试的数据，具体方法为</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">git clone git@github.com:eyalroz/ssb-dbgen.git</span><br><span class="line">cd ssb-dbgen</span><br><span class="line">cmake . &amp;&amp; cmake --build .</span><br><span class="line">mkdir data</span><br><span class="line">mv dbgen ./data</span><br><span class="line">cp dists.dss ./data</span><br><span class="line">cd data</span><br><span class="line">./dbgen -v -s 10</span><br></pre></td></tr></table></figure>
+
+<p>工具的一些命令</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">./dbgen -h</span><br><span class="line">SSB (Star Schema Benchmark) Population Generator (Version 1.0.0)</span><br><span class="line">Copyright Transaction Processing Performance Council 1994 - 2000</span><br><span class="line">USAGE:</span><br><span class="line">dbgen [-&#123;vfFD&#125;] [-O &#123;fhmsv&#125;][-T &#123;pcsdla&#125;]</span><br><span class="line">	[-s &lt;scale&gt;][-C &lt;procs&gt;][-S &lt;step&gt;]</span><br><span class="line">dbgen [-v] [-O &#123;dfhmr&#125;] [-s &lt;scale&gt;] [-U &lt;updates&gt;] [-r &lt;percent&gt;]</span><br><span class="line"></span><br><span class="line">-b &lt;s&gt; -- load distributions for &lt;s&gt;</span><br><span class="line">-C &lt;n&gt; -- use &lt;n&gt; processes to generate data</span><br><span class="line">          [Under DOS, must be used with -S]</span><br><span class="line">-D     -- do database load in line</span><br><span class="line">-d &lt;n&gt; -- split deletes between &lt;n&gt; files</span><br><span class="line">-f     -- force. Overwrite existing files</span><br><span class="line">-F     -- generate flat files output</span><br><span class="line">-h     -- display this message</span><br><span class="line">-i &lt;n&gt; -- split inserts between &lt;n&gt; files</span><br><span class="line">-n &lt;s&gt; -- inline load into database &lt;s&gt;</span><br><span class="line">-O d   -- generate SQL syntax for deletes</span><br><span class="line">-O f   -- over-ride default output file names</span><br><span class="line">-O h   -- output files with headers</span><br><span class="line">-O m   -- produce columnar output</span><br><span class="line">-O r   -- generate key ranges for deletes.</span><br><span class="line">-O v   -- Verify data set without generating it.</span><br><span class="line">-q     -- enable QUIET mode</span><br><span class="line">-r &lt;n&gt; -- updates refresh (n/100)% of the</span><br><span class="line">          data set</span><br><span class="line">-s &lt;n&gt; -- set Scale Factor (SF) to  &lt;n&gt;</span><br><span class="line">-S &lt;n&gt; -- build the &lt;n&gt;th step of the data/update set</span><br><span class="line">-T c   -- generate cutomers dimension table ONLY</span><br><span class="line">-T p   -- generate parts dimension table ONLY</span><br><span class="line">-T s   -- generate suppliers dimension table ONLY</span><br><span class="line">-T d   -- generate date dimension table ONLY</span><br><span class="line">-T l   -- generate lineorder fact table ONLY</span><br><span class="line">-U &lt;s&gt; -- generate &lt;s&gt; update sets</span><br><span class="line">-v     -- enable VERBOSE mode</span><br><span class="line"></span><br><span class="line">To generate the SF=1 (1GB), validation database population, use:</span><br><span class="line">	dbgen -vfF -s 1</span><br><span class="line"></span><br><span class="line">To generate updates for a SF=1 (1GB), use:</span><br><span class="line">	dbgen -v -U 1 -s 1</span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/weixinpay.jpg" alt="Andrewei 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.jpg" alt="Andrewei 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Andrewei
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://andrewei1316.github.io/2020/12/12/star-schema-benchmark/" title="《Star Schema Benchmark》阅读笔记">https://andrewei1316.github.io/2020/12/12/star-schema-benchmark/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/olap/" rel="tag"><i class="fa fa-tag"></i> olap</a>
+              <a href="/tags/benchmark/" rel="tag"><i class="fa fa-tag"></i> benchmark</a>
+              <a href="/tags/ssb/" rel="tag"><i class="fa fa-tag"></i> ssb</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/11/20/column-stores-vs-row-stores/" rel="prev" title="《Column-Stores vs. Row-Stores How Different Are They Really?》 阅读笔记">
+      <i class="fa fa-chevron-left"></i> 《Column-Stores vs. Row-Stores How Different Are They Really?》 阅读笔记
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/12/13/skylake-microarchitecture/" rel="next" title="【转载】Skylake Microarchitecture">
+      【转载】Skylake Microarchitecture <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A1%A8%E7%BB%93%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">表结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#LINEORDER-%E4%BA%8B%E5%AE%9E%E8%A1%A8"><span class="nav-number">2.1.</span> <span class="nav-text">LINEORDER 事实表</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Schema-%E6%8F%8F%E8%BF%B0"><span class="nav-number">2.1.1.</span> <span class="nav-text">Schema 描述</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BB%BA%E8%A1%A8-SQL"><span class="nav-number">2.1.2.</span> <span class="nav-text">建表 SQL</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#PART-%E7%BB%B4%E5%BA%A6%E8%A1%A8"><span class="nav-number">2.2.</span> <span class="nav-text">PART 维度表</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Schema-%E6%8F%8F%E8%BF%B0-1"><span class="nav-number">2.2.1.</span> <span class="nav-text">Schema 描述</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BB%BA%E8%A1%A8-SQL-1"><span class="nav-number">2.2.2.</span> <span class="nav-text">建表 SQL</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SUPPLIER-%E7%BB%B4%E5%BA%A6%E8%A1%A8"><span class="nav-number">2.3.</span> <span class="nav-text">SUPPLIER 维度表</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Schema-%E6%8F%8F%E8%BF%B0-2"><span class="nav-number">2.3.1.</span> <span class="nav-text">Schema 描述</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BB%BA%E8%A1%A8-SQL-2"><span class="nav-number">2.3.2.</span> <span class="nav-text">建表 SQL</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#CUSTOMER-%E7%BB%B4%E5%BA%A6%E8%A1%A8"><span class="nav-number">2.4.</span> <span class="nav-text">CUSTOMER 维度表</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Schema-%E6%8F%8F%E8%BF%B0-3"><span class="nav-number">2.4.1.</span> <span class="nav-text">Schema 描述</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BB%BA%E8%A1%A8-SQL-3"><span class="nav-number">2.4.2.</span> <span class="nav-text">建表 SQL</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DATE-%E7%BB%B4%E5%BA%A6%E8%A1%A8"><span class="nav-number">2.5.</span> <span class="nav-text">DATE 维度表</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Schema-%E6%8F%8F%E8%BF%B0-4"><span class="nav-number">2.5.1.</span> <span class="nav-text">Schema 描述</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BB%BA%E8%A1%A8-SQL-4"><span class="nav-number">2.5.2.</span> <span class="nav-text">建表 SQL</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2%E8%AF%AD%E5%8F%A5"><span class="nav-number">3.</span> <span class="nav-text">查询语句</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2%E8%AF%AD%E5%8F%A5%E5%AE%9A%E4%B9%89"><span class="nav-number">3.1.</span> <span class="nav-text">查询语句定义</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Q1"><span class="nav-number">3.1.1.</span> <span class="nav-text">Q1</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Q1-1"><span class="nav-number">3.1.1.1.</span> <span class="nav-text">Q1.1</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Q1-2"><span class="nav-number">3.1.1.2.</span> <span class="nav-text">Q1.2</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Q1-3"><span class="nav-number">3.1.1.3.</span> <span class="nav-text">Q1.3</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Q2"><span class="nav-number">3.1.2.</span> <span class="nav-text">Q2</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Q2-1"><span class="nav-number">3.1.2.1.</span> <span class="nav-text">Q2.1</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Q2-2"><span class="nav-number">3.1.2.2.</span> <span class="nav-text">Q2.2</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Q2-3"><span class="nav-number">3.1.2.3.</span> <span class="nav-text">Q2.3</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Q3"><span class="nav-number">3.1.3.</span> <span class="nav-text">Q3</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Q3-1"><span class="nav-number">3.1.3.1.</span> <span class="nav-text">Q3.1</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Q3-2"><span class="nav-number">3.1.3.2.</span> <span class="nav-text">Q3.2</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Q3-3"><span class="nav-number">3.1.3.3.</span> <span class="nav-text">Q3.3</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Q3-4"><span class="nav-number">3.1.3.4.</span> <span class="nav-text">Q3.4</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Q4"><span class="nav-number">3.1.4.</span> <span class="nav-text">Q4</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Q4-1"><span class="nav-number">3.1.4.1.</span> <span class="nav-text">Q4.1</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Q4-2"><span class="nav-number">3.1.4.2.</span> <span class="nav-text">Q4.2</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Q4-3"><span class="nav-number">3.1.4.3.</span> <span class="nav-text">Q4.3</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2%E5%88%86%E6%9E%90"><span class="nav-number">3.2.</span> <span class="nav-text">查询分析</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E6%95%B0%E6%8D%AE"><span class="nav-number">4.</span> <span class="nav-text">测试数据</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Andrewei"
+      src="/images/header.jpg">
+  <p class="site-author-name" itemprop="name">Andrewei</p>
+  <div class="site-description" itemprop="description">There's no feat, but what we make.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">38</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">48</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/andrewei1316" title="GitHub → https://github.com/andrewei1316" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Andrewei</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'c104fbea1a954f68954e',
+      clientSecret: 'b436df6cf1fa320ed8747515f6137aa6f88f7417',
+      repo        : 'andrewei1316.github.io',
+      owner       : 'Andrewei1316',
+      admin       : ['Andrewei1316'],
+      id          : 'bcc9fadfa09592e3a65b07ce1d44d418',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

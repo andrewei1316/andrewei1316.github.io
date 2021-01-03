@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic|Monaco:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/pace-js@1/themes/blue/pace-theme-minimal.css">
+  <script src="//cdn.jsdelivr.net/npm/pace-js@1/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"andrewei1316.github.io","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":true,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="本文全部内容都来自于 DECODEZ “Skylake 微架构剖析” 系列，地址 https:&#x2F;&#x2F;decodezp.github.io&#x2F;2019&#x2F;01&#x2F;07&#x2F;quickwords9-skylake-pipeline-1&#x2F; 搬运仅仅为了留作笔记，详细内容请直接访问 DECODEZ 的博客网站 https:&#x2F;&#x2F;decodezp.github.io&#x2F;  前言了解 CPU 的微架构是基于其开发“硬核”软">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【转载】Skylake Microarchitecture">
+<meta property="og:url" content="https://andrewei1316.github.io/2020/12/13/skylake-microarchitecture/index.html">
+<meta property="og:site_name" content="Andrewei&#39;s Blog">
+<meta property="og:description" content="本文全部内容都来自于 DECODEZ “Skylake 微架构剖析” 系列，地址 https:&#x2F;&#x2F;decodezp.github.io&#x2F;2019&#x2F;01&#x2F;07&#x2F;quickwords9-skylake-pipeline-1&#x2F; 搬运仅仅为了留作笔记，详细内容请直接访问 DECODEZ 的博客网站 https:&#x2F;&#x2F;decodezp.github.io&#x2F;  前言了解 CPU 的微架构是基于其开发“硬核”软">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure1_compare_with_5th.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure2_intel_common_arch_post_ucache.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure3_skylake_fetch.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure4_skylake_decode.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure5_fjnbCV.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure6_dsb_cache.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure7_backend.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure8_execution_engine_example.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure9_out_of_order.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure10_out_of_order_once_more.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure11_out_of_order_false_dependency.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure12_AW0jkn.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure13_AW0HOg.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure14_AW0qmQ.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure15_AW0Lwj.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure16_AW076S.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure17_AW0OTs.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure18_AW0vYq.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure19_AW0xf0.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure20_AWBCXF.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure21_AWBplT.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure22_AWBSpV.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure23_AWB96U.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure24_AWBim4.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure25_AWBF0J.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure26_AWBVt1.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure27_AWBEkR.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure28_AWBk79.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure29_AWBZfx.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure30_ELdlTO.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure31_ELdQ0K.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure32_ELdMm6.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure33_ELduOx.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure34_ELdn61.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure35_ELd8te.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure36_ELdYpd.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure37_ELd3kD.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure38_ELdGfH.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure39_EOa09H.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure40_EOaB3d.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure41_EOdEPe.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure42_EOdurt.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure43_EOdexA.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure44_EOdZ2d.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure45_EOdV8H.png">
+<meta property="og:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure46_EOdnKI.png">
+<meta property="article:published_time" content="2020-12-13T12:35:04.000Z">
+<meta property="article:modified_time" content="2021-01-03T09:16:39.440Z">
+<meta property="article:author" content="Andrewei">
+<meta property="article:tag" content="cpu">
+<meta property="article:tag" content="arch">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://andrewei1316.github.io/images/skylake_microarchitecture/figure1_compare_with_5th.png">
+
+<link rel="canonical" href="https://andrewei1316.github.io/2020/12/13/skylake-microarchitecture/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>【转载】Skylake Microarchitecture | Andrewei's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="Andrewei's Blog" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Andrewei's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/andrewei1316" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://andrewei1316.github.io/2020/12/13/skylake-microarchitecture/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/header.jpg">
+      <meta itemprop="name" content="Andrewei">
+      <meta itemprop="description" content="There's no feat, but what we make.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Andrewei's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          【转载】Skylake Microarchitecture
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-12-13 20:35:04" itemprop="dateCreated datePublished" datetime="2020-12-13T20:35:04+08:00">2020-12-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-01-03 17:16:39" itemprop="dateModified" datetime="2021-01-03T17:16:39+08:00">2021-01-03</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpu/" itemprop="url" rel="index"><span itemprop="name">cpu</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/cpu/arch/" itemprop="url" rel="index"><span itemprop="name">arch</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>本文全部内容都来自于 DECODEZ “Skylake 微架构剖析” 系列，地址 <a target="_blank" rel="noopener" href="https://decodezp.github.io/2019/01/07/quickwords9-skylake-pipeline-1/">https://decodezp.github.io/2019/01/07/quickwords9-skylake-pipeline-1/</a></p>
+<p>搬运仅仅为了留作笔记，详细内容请直接访问 DECODEZ 的博客网站 <a target="_blank" rel="noopener" href="https://decodezp.github.io/">https://decodezp.github.io/</a></p>
+</blockquote>
+<h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>了解 <code>CPU</code> 的微架构是基于其开发“硬核”软件的必需步骤。由于一些历史遗留问题，现存的技术资料往往存在一些概念混淆、重复命名甚至自相矛盾之处。本文一来梳理 <code>Skylake</code> 微架构(主要是流水线)的组成和特性，二来试图厘清一些含混的概念用以帮助后来者。</p>
+<p>另外在介绍完微架构之后，会继续结合 <code>Perf</code> 中的 <code>Performance Event</code> 来对照说明互为印证。</p>
+<blockquote>
+<p>需要强调的是，本文的重点是Skylake的流水线(pipeline)架构，core间的连接和架构方式不作重点说明。</p>
+</blockquote>
+<a id="more"></a>
+
+<h2 id="Skylake-介绍"><a href="#Skylake-介绍" class="headerlink" title="Skylake 介绍"></a>Skylake 介绍</h2><p><code>Skylake</code> 是由 <code>Intel</code> 以色列研发中心于2015年发布的 <code>14nm CPU</code> 架构。作为 <code>Broadwell</code> 的继任者，<code>Skylake</code> 在原有架构的基础上，对一些关键特性和组件做出了相当幅度的优化：</p>
+<p><img src="/images/skylake_microarchitecture/figure1_compare_with_5th.png" alt="Figure1 Compare With 5th"></p>
+<p>上图简单列举了一些量化指标，现在不求甚解就好。</p>
+<p>在指令集方面，引入了<code>AVX-512</code>、<code>CLFLUSHOPT</code>、<code>CLWB</code>等新的指令集，不过本文不打算介绍这些东西，写到这里只是觉得如果只用上一段话结束这一小节有些太突兀了。</p>
+<h2 id="流水线概览"><a href="#流水线概览" class="headerlink" title="流水线概览"></a>流水线概览</h2><p><img src="/images/skylake_microarchitecture/figure2_intel_common_arch_post_ucache.png" alt="Figure2 intel_common_arch_post_ucache"></p>
+<p>引用上面这张图是为了举一个反例，说明一下本文要解决的问题。这张图可以被当做是一张流水线的架构抽象，我可以指着每一个组件讲讲它们都是干嘛的，但这里的问题就是某一个相同的组件在不同的文档、资料、甚至语境下可能有两个甚至更多个名字。</p>
+<p>比如蓝色方块最下面的<code>Allocation Queue</code>，它就还有一个名字叫做<code>Instruction Decode Queue</code>，同时它还有可能被叫做<code>IDQ</code>或<code>AQ</code>。而关于<code>Decoded Instruction Queue</code>、<code>Micro Instruction Sequencer</code>、<code>Re-order buffer</code>、<code>Scheduler</code>、<code>Reservation Station</code>等概念的辨析也是…需要下一番功夫。</p>
+<p>本文将以全网最清晰的方式讲清楚这些概念。</p>
+<p>从high-level的层面来讲，Skylake的流水线架构与Broadwell和Haswell没有太大出入。还是可以分为两个阶段：</p>
+<h3 id="前端-Front-End"><a href="#前端-Front-End" class="headerlink" title="前端(Front-End)"></a>前端(Front-End)</h3><p>上图中蓝色部分就代表流水线的前端。它的主要作用就是获取指令、解码(Decode)指令。</p>
+<p>为了最大限度的发挥CPU的能力，前端就需要尽可能高效率地把程序指令输送给后端。这里就面临两个挑战：</p>
+<ol>
+<li>如何更快更准确地取得要执行的指令</li>
+<li>如何将取得的指令更快地解码为微指令(micro-ops/uops)</li>
+</ol>
+<p>有了更多的微指令输送给后端（执行单元），后端的工作量才能饱和。而前端的所有组件和机制，都是围绕这两个挑战进行的。</p>
+<h3 id="后端-Back-End"><a href="#后端-Back-End" class="headerlink" title="后端(Back-End)"></a>后端(Back-End)</h3><p>上图中红色的部分就代表流水线的后端。一般来讲绿色的部分是存储子系统，虽然与后端交互，但严格讲不算在后端里面。</p>
+<p>后端的主要任务就是执行前端送过来的指令。和前端类似，后端除了“来料加工”之外，也有它自己需要面对的挑战：</p>
+<ol>
+<li>如何提高指令的并行程度</li>
+<li>如何充分利用已有的CPU能力</li>
+</ol>
+<p>如果将CPU比作一家餐厅，跑在上面的应用就是来餐厅就餐的食客。前端类似餐厅的服务生，需要接受客人的下单，同时将订单送到后厨。而后厨就类似后端，负责做出客人需要的菜品。</p>
+<p>但如何能让上菜速度更快？前端是否可以在客人排位时就让其提前下单？后厨是否能够提前准备好本店热门的特色菜，或者一并煮好一大锅面条，根据需要浇上不同的浇头？</p>
+<p>CPU说是高科技，其实干得也就是这些事情。</p>
+<h2 id="前端-Frontend"><a href="#前端-Frontend" class="headerlink" title="前端(Frontend)"></a>前端(Frontend)</h2><p>处理器在前端这一部分的时候还是顺序(in-order)处理的，主要是也确实没什么乱序的空间。虽然说是顺序，但前端因为贴近业务，所以受人写的代码的影响也比较大。如果仅仅只是“取指令-&gt;解码”，恐怕需要写程序的人是个非常聪明的程序员。前端很多组件的工作其实都是在填程序员的坑，这也是我比较心疼前端的地方。</p>
+<h3 id="Fetch"><a href="#Fetch" class="headerlink" title="Fetch"></a>Fetch</h3><p><img src="/images/skylake_microarchitecture/figure3_skylake_fetch.png" alt="Figure3 skylake_fetch"></p>
+<p>前端的任务，首先是从内存中取得指令。同读取数据类似，<code>CPU</code> 通过查询页表获得指令所在的内存地址，同时把指令塞到 <code>CPU</code> 的 <code>L1</code> 指令缓存里。</p>
+<p>具体要把哪个地址上的指令数据送到 <code>L1I$</code> 里，这是分支预测器(Branch predictor)的工作。作为 <code>CPU</code> 的核心技术，<code>Intel</code> 并没有透露太多信息，我们这里也只好一笔带过。不过它的细节也许很复杂，但它的脾气很好掌握：和我们很多人不喜欢自己的工作一样，它的工作就是处理分支，但它最不喜欢分支。</p>
+<p>在 <code>Skylake</code> 架构里，<code>L1I$</code> 大小为 <code>32KB</code>，组织形式为 <code>8-way set associative</code> (关于 <code>CPU</code> 缓存组织形式的讲解可以参照<a target="_blank" rel="noopener" href="https://decodezp.github.io/2018/11/25/quickwords2-cacheassociativity/">这篇</a>)，每个 <code>Cycle</code> 可以取 <code>16Byte</code> 长度(fetch window)的指令。如果你开了 <code>Hyper-thread</code>，那么同一个物理核上的两个逻辑核均分这个 <code>fetch window</code>，每个 <code>Cycle</code>各占用一次。</p>
+<p>在 <code>L1I$</code> 里的指令还都是变长的 <code>x86 macro-ops</code>，也就是我们看到的那些编译之后的汇编指令。如果熟悉这些指令的话，就会知道这些指令的长度（就是那些二进制数字）都不一样，同时一条指令有时可以由好几个操作组成。</p>
+<p>这种指令对 <code>CPU</code> 的执行单元来说是很不友好的，同时如果想要通过乱序执行提高指令的并行度，减小指令的粒度也是必须的步骤。因此需要把这些<code>marco-ops</code>“解码”为 <code>micro-ops</code>。</p>
+<p>当然具体的解码工作还在后面。从 <code>L1I$</code> 中取得指令数据后，首先要进入“预解码”阶段，在这里需要识别出在一个 <code>fetch window</code> 中取得的这 <code>16</code> 个 <code>Byte</code> 的数据里面有多少个指令。除此之外，还需要对一些特殊指令，比如分支转跳打上一些标记。</p>
+<p>但因为指令变长的原因，<code>16</code> 个 <code>Byte</code> 往往并不对应固定的指令数，还有可能最后一个指令有一半在这 <code>16Byte</code> 里，另一边还在后面。另外就是 <code>pre-decode</code> 在一个 <code>Cycle</code> 最多识别出 <code>6</code> 个指令，或者这 <code>16Byte</code> 的数据都解析完。如果你这 <code>16</code> 个 <code>Byte</code> 里包含有 <code>7</code> 个指令，那么第一个 <code>Cycle</code> 识别出前 <code>6</code> 个之后，还需要第二个 <code>Cycle</code> 识别最后一个，然后才能再读取后面 <code>16Byte</code>。</p>
+<p>那么 <code>pre-decode</code> 的效率就变成了 <code>3.5 instruction / cycle</code>，比最理想的情况 <code>6 instruction / cycle</code> 降低了<code>41%</code>，现实就是这么残酷。</p>
+<p>经过 <code>pre-decode</code> 之后，才真正从 <code>16Byte</code> 的二进制数据中识别出了指令，这些指令下一步要被塞到一个队列里(Instruction Queue)看看有没有什么能被优化的地方。一个最常见的优化方式就是<code>macro-op fusion</code>，就是把两个相邻的，且能被一个指令表示的指令，用那一个指令替换掉。比如：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cmp eax, [mem]</span><br><span class="line">jne loop</span><br></pre></td></tr></table></figure>
+
+<p>直接换成</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cmpjne eax, [mem], loop</span><br></pre></td></tr></table></figure>
+
+<p>当然既然决定这么替换，新指令对流水线的开销肯定小于被替换的两个指令之和。如此可以减轻一部分后端执行单元的工作负荷和资源开销。</p>
+<p>OK, 在取得了指令数据，识别出了数据中的指令，并对指令做了一些优化合并之后，就该开始正儿八经地解码了。</p>
+<h3 id="解码"><a href="#解码" class="headerlink" title="解码"></a>解码</h3><p><img src="/images/skylake_microarchitecture/figure4_skylake_decode.png" alt="Figure4 skylake_decode"></p>
+<p>在拿到了经过“预解码”的<code>macro-ops</code>之后，开始正式进入解码过程。<code>marco-ops</code>进入 <code>Instruction Decode</code> 组件解码，最终的输出为定长的 <code>micro-ops</code>。</p>
+<p><code>Insturction Decode</code> 组件也有入口带宽限制，每个 <code>Cycle</code> 最多取 <code>3</code> 个 <code>unfused</code> 指令 + <code>2</code> 个 <code>fused</code> 指令，或者 <code>5</code> 个 <code>unfused</code> 指令（这里指 <code>macro ops</code>）。所以说 <code>fused</code> 多了也不好，一个 <code>Cycle</code> 最多取两个。同时如果开了 <code>Hyper Thread</code>，则两个 <code>Thread</code> 按 <code>Cycle</code> 交替使用 <code>Instruction Decode</code>。</p>
+<p>在 <code>Instruction Decode</code> 组件里面的就是各个具体的 <code>Decoder</code>。<code>Decoder</code> 类型可以分类两类，一类是 <code>Simple Decoder</code>，一类是 <code>Complex Decoder</code>，感觉这句是在说废话。</p>
+<p>顾名思义，<code>Simple Decoder</code> 处理的是解码之后的输出为1个 <code>fused-μop</code> 的指令；<code>Complex Decoder</code> 处理的是解码之后的输出为1个至4个 <code>fused-μop</code> 的指令。</p>
+<h4 id="Fused-μop"><a href="#Fused-μop" class="headerlink" title="Fused-μop"></a>Fused-μop</h4><p>注意这里说的是 fused-<code>μop</code>，不是 fused-<code>marco</code>。在这里所有输出的 <code>μop</code> 都是做过 <code>fused</code> 处理的，目的是减少后续资源的占用。</p>
+<blockquote>
+<p>但这里有一个比较容易混淆的概念，就是 <code>fused-μop</code> 并非专指那些两个 <code>μop</code> 合并之后生成的 “合并μop”，而是指所有经过了 <code>μop fusion</code> 处理的 <code>μop</code>：有些指令可能两个 <code>μop</code> 变一个，但也有一些是一个还是一个，即便如此，输出的那一个也叫 <code>fused-μop</code>。</p>
+</blockquote>
+<p>为了进一步澄清这个概念，我们稍微需要涉及一点后端的概念。在前端这里，生成 <code>fused-μop</code> 的部分还属于 <code>CPU</code> 流水线中的 <code>μops fused domain</code>，而在后端需要将指令发射到执行单元去的时候，是不能执行 <code>fused μop</code>的，所以 <code>fused μop</code> 还需要再分解为 <code>unfused μop</code>才可以执行，这一部分就属于 <code>CPU</code> 流水线中的<code>μops unfused domain</code>。</p>
+<p>有了这些概念之后，我们可以看一下<a target="_blank" rel="noopener" href="https://www.agner.org/optimize/instruction_tables.pdf">Instruction Tables.pdf</a> 这份文档。</p>
+<p>在P244中有对 <code>skylake</code> 指令的说明，上面有对一些概念的解释，下面是一张表格：</p>
+<p><img src="/images/skylake_microarchitecture/figure5_fjnbCV.png" alt="Figure5 fjnbCV"></p>
+<p>在这张表格里是最常见的 <code>mov</code> 命令的说明。但因为操作数(operands)的不同在真正执行的时候也会有细节上的差别。第一行中的 <code>mov</code> 的两个操作数一个是 <code>register</code>，另外一个是一个立即数。在 <code>μops fused domain</code> 和 <code>μops unfused domain</code> 两栏中的计数都是1。</p>
+<p>这种指令也算在 <code>μops fused domain</code> 经过了 <code>fusion</code> 处理。只不过其实前后没什么区别。</p>
+<p>但如果我们看一下所有在 <code>μops unfused domain</code> 里计数为 <code>2</code> 的 <code>mov</code> 指令，它们在 <code>μops fused domain</code> 中的计数都是 <code>1</code>。这种 <code>mov</code> 指令就是真正做过 <code>2</code> 条 <code>μop</code>合并的<code>mov</code>指令。</p>
+<p>这份表格还有很多有趣的内容，推荐有时间的时候随手翻翻。</p>
+<p><code>Skylake</code> 有 <code>4</code> 个 <code>Simple Decoder</code> 和 <code>1</code> 个 <code>Complex Decoder</code>。但从表里我们可以看到 <code>μopps fused domain</code> 计数为1，也就是可以被 <code>Simple Decoder</code> 处理的指令在所有指令中所占的比例似乎并没有达到 <code>4/5</code> 那么高。</p>
+<p>这里需要说明的是，输出大于 <code>4</code> 个 <code>μop</code> 的指令，既不由 <code>Simple Decoder</code> 处理，也不由 <code>Complex Decoder</code> 处理，而是直接去查 <code>Microcode Sequencer(MS)</code>，这是一块类似于缓存的 <code>ROM</code>。</p>
+<p><code>Complex Decoder</code> 的数量始终为 <code>1</code> 的原因是 <code>Complex Decoder</code> 解码出来的 <code>μop</code> 都很难在执行时进行并行化处理，同时 <code>Complex Decoder</code> 每多解码一个 <code>μop</code>，就要有一个 <code>Simple Decoder</code> 处于不能工作的状态。</p>
+<p>对 <code>CPU</code> 来说，它最希望的就是它要做的工作，它需要的数据，它要执行的指令，都已经在一块缓存里准备就绪了。这是 <code>CPU</code> 上班摸鱼的主要方法，但摸出了风格，摸出了水平。下一部分介绍一下在指令解码方面的缓存内容。</p>
+<h4 id="MSROM"><a href="#MSROM" class="headerlink" title="MSROM"></a>MSROM</h4><p>MSROM(Micro-code sequencer ROM)就是在上文中提到的专门处理输出大于 <code>4</code> 个 <code>μop</code>的那块类似缓存的 <code>ROM</code>。很多文档里面也直接将其称为 <code>MS</code>，具体叫什么多需要结合上下文语境，知道是一回事就好了。</p>
+<blockquote>
+<p>我个人其实推荐读者在编写自己的文档时能注意这些名称上的“一致性”，同编写程序时给变量或函数命名时的一致性一样，这些看似没什么“技术含量”的工作，却能够极大地提高信息传达的效率，也就是提高文档或代码的可读性和可维护性。</p>
+</blockquote>
+<p>在 <code>Instruction Decoder</code> 收到一个输出要大于 <code>4</code> 个 <code>μop</code> 的指令之后，它就会将请求转发给 <code>MSROM</code>。<code>MSROM</code> 虽然是专门解码/查询大于 <code>4</code> 个 <code>μop</code> 的指令的组件，但它最大的传输效率是 <code>4 μop/Cycle</code>。同时在它工作的时候，所有的 <code>Instruction Decoder</code> 都要处于 <code>Disable</code> 的状态。因此虽然它的工作不太需要“动脑子”，但却仍要尽量避免。</p>
+<h4 id="Stack-Engine"><a href="#Stack-Engine" class="headerlink" title="Stack Engine"></a>Stack Engine</h4><p><code>Stack Engine</code> 是专门处理栈操作指令的专用组件。类似 <code>PUSH</code>、<code>POP</code>、<code>CALL</code>、<code>RET</code> 这样的指令都算栈操作指令。<code>Stack Engine</code> 不算什么新鲜的黑科技，自从<code>Pentium M</code> 时代起就已经出现在 <code>Intel</code> 的 <code>CPU</code> 中。它的主要目的是避免栈操作指令对后端资源的占用，从而为其他计算任务提供出更多的资源。为此，<code>Stack Engine</code> 提供栈操作指令专用的加法器和其他所需的逻辑完成这一任务。</p>
+<p><code>Stack Engine</code> 在 <code>Instruction Decoder</code> 之后，监控所有流出的 <code>μop</code>，并且从中提取出栈操作指令，进而直接执行，从而减轻栈操作指令对后端资源的占用。</p>
+<p>这也可能是为什么有些时候 <code>inline</code> 的函数性能还不如不 <code>inline</code> 的原因吧:D（不负责任猜测</p>
+<h4 id="Decoded-Stream-Buffer-DSB"><a href="#Decoded-Stream-Buffer-DSB" class="headerlink" title="Decoded Stream Buffer(DSB)"></a>Decoded Stream Buffer(DSB)</h4><p><img src="/images/skylake_microarchitecture/figure6_dsb_cache.png" alt="Figure6 dsb_cache"></p>
+<h5 id="别名"><a href="#别名" class="headerlink" title="别名"></a>别名</h5><p>像 <code>DSB</code> 这种组件，首先要说明的就是它也叫 <code>μop cache</code> 或 <code>decoded icache</code>。</p>
+<h5 id="作用"><a href="#作用" class="headerlink" title="作用"></a>作用</h5><p>无论是用 <code>Instruction Decoder</code> 还是用 <code>MSROM</code>，终究还是要做一次 “解码” 的操作。但同所有 <code>Cache</code> 加速的原理一样，如果能把解码之后的结果(μop)存下来，下次再出现的时候直接使用，那么就可以显著提高解码速度，<code>DSB</code> 就是这个目的。</p>
+<h5 id="参数"><a href="#参数" class="headerlink" title="参数"></a>参数</h5><p><code>DSB</code> 的组织形式是 <code>32</code> 个 <code>set</code>，每个 <code>set</code> 有 <code>8</code> 条 <code>cache line</code>，每条 <code>cache line</code> 最多保存 <code>6</code> 个 <code>μop</code>。</p>
+<p>每次 <code>cache hit</code> 可以传输最大 <code>6</code> 个 <code>μop/Cycle</code>，这 <code>6</code> 个 <code>μop</code> 最大可以对应到 <code>64 byte</code> 的前端 <code>fetch window size</code>，并且完全不需要任何 <code>Instruction decoder</code> 参与，也没有繁琐的解码过程。在实际应用中，<code>DSB</code> 的 <code>cache hit rate</code> 在 <code>80%</code> 或以上。</p>
+<h5 id="与icache的关系"><a href="#与icache的关系" class="headerlink" title="与icache的关系"></a>与icache的关系</h5><p><code>CPU</code> 的 <code>icache</code> 一般存储的是最原始的从内存里读进来的程序的汇编指令(marco instruction)。而 <code>DSB</code> 或者 <code>μop cache</code> 虽然也是存 <code>instruction</code> 的 <code>cache</code>，但如前所述，它存的是已经解码好的 <code>μop</code>，所以这玩意有时候又被称为 “decoded icache”。当然了，这些 <code>μop</code> 都是 <code>CPU</code> 的 <code>icache</code> 中的指令解码之后得到的。</p>
+<h5 id="与MSROM的关系"><a href="#与MSROM的关系" class="headerlink" title="与MSROM的关系"></a>与MSROM的关系</h5><p>输出大于 <code>4</code> 个 <code>μop</code> 的指令依然只能由 <code>MSROM</code> 解码。<code>DSB</code> 保存的也是那些小于等于 <code>4</code> 个 <code>μop</code> 指令的 <code>μop</code>。</p>
+<h4 id="MITE-Path和DSB-Path"><a href="#MITE-Path和DSB-Path" class="headerlink" title="MITE Path和DSB Path"></a>MITE Path和DSB Path</h4><p>这两个概念主要用于区分最终需要执行的 <code>μop</code> 是通过什么方式来的。在上一节 <code>Decoded Stream Buffer</code> 之前的所有内容，都算是 <code>MITE Path</code>。<code>MITE</code> 是(Micro-instruction Translation Engine)的缩写，同时它在有些文档里也被称作 <code>legacy decode pipeline</code> 或 <code>legacy path</code>。这条线路上过来的 <code>μop</code> 都是从 <code>marco instruction</code> 一步一步解码来的。</p>
+<p><code>DSB path</code> 就是直接从 <code>DSB</code> 那条道上过来的 <code>μop</code>。当 <code>CPU</code> 需要在 <code>MITE Path</code>、<code>DSB Path</code> 以及 <code>MSROM</code> 之间切换(switch)以便取得所需的 <code>μop</code> 时，需要花费一定的 <code>CPU Cycle</code> 完成这一工作。</p>
+<h4 id="Instruction-Decode-Queue-IDQ"><a href="#Instruction-Decode-Queue-IDQ" class="headerlink" title="Instruction Decode Queue(IDQ)"></a>Instruction Decode Queue(IDQ)</h4><p><code>IDQ</code> 也叫 <code>Allocation Queue(AQ)</code>，也有时候会写成是 <code>Decode Queue</code>。解码完成的 <code>μop</code> 在进入后端之前需要先在 <code>IDQ</code> 中做一下缓冲。作为一个 ”缓冲队列”，主要作用是将前端解码可能引入的流水线”气泡(bubbles)“消化掉，为后端提供稳定的 <code>μop</code> 供应(目标是 <code>6μop/Cycle</code>)。</p>
+<p><code>Skylake</code> 的 <code>IDQ</code> 最大可以存放  <code>64</code> 个 <code>μop/thread</code>，比 <code>Broadwell</code> 的 <code>28</code> 个多一倍还多。这些 <code>μop</code> 在 <code>IDQ</code> 中除了排一下队之外，还会被 <code>Loop Stream Detector(LSD)</code>扫描一遍，用来发现这些 <code>μop</code> 是不是来自于一个循环。</p>
+<h5 id="Loop-Stream-Detector-LSD"><a href="#Loop-Stream-Detector-LSD" class="headerlink" title="Loop Stream Detector(LSD)"></a>Loop Stream Detector(LSD)</h5><p>如果在 <code>IDQ</code> 中能被发现存在循环体 <code>μop</code>，那么在下一次循环的时候，就不需要去重新解码这些循环体生成的 <code>μop</code>，而是直接由 <code>LSD</code> 提供 <code>μops</code>。这便可以省去指令 <code>fetch</code>、解码、读 <code>μop cache</code>、分支预测等所有之前的步骤，并且能进一步减少缓存占用。当然，当 <code>LSD</code> 起作用的时候，整个前端都是处于 <code>Disabled</code> 的状态。</p>
+<p><code>Skylake</code> 的 <code>LSD</code> 需要在 <code>IDQ</code> 的长度（64μop）内发现循环，所以，循环体还是尽量紧凑一点吧:D</p>
+<h2 id="后端-Backend"><a href="#后端-Backend" class="headerlink" title="后端 (Backend)"></a>后端 (Backend)</h2><p><img src="/images/skylake_microarchitecture/figure7_backend.png" alt="Figure7 backend"></p>
+<p>还是首先介绍一下这个部分是否有别的名字。在有些文档里后端又直接被称为 <code>Execution Engine</code>。后端的主要任务当然就是执行前端解码出来的这些 <code>μop</code>。但后端和前端的设计都在围绕着“如何提高指令的并行性”来设计和优化。</p>
+<p>在 <code>Skylake</code> 架构中，<code>IDQ</code> 以最大 <code>6μop/Cycle</code> 的速度将 <code>μop</code> 送入 <code>Re-order Buffer</code>，后端的处理在 <code>Re-order Buffer</code> 中正式开始。</p>
+<h3 id="Out-of-order-OOO-Execution-Engine"><a href="#Out-of-order-OOO-Execution-Engine" class="headerlink" title="Out-of-order(OOO)Execution/Engine"></a>Out-of-order(OOO)Execution/Engine</h3><p>先讲一下OOO（乱序）以便对后端的执行有一个整体的把握。</p>
+<p>我们的程序虽然是按顺序编写的指令，但CPU并不（一定）会按相同的方式执行。为了提升整体效率，CPU采用的是乱序执行的方式。从一个“窗口”范围内选取可以执行的指令执行，并且这些操作对用户透明，在程序编写者的角度看来仍是在按他编写的指令顺序执行。</p>
+<blockquote>
+<p>从根本上来讲，OOO是用”数据流（Data flow）”的角度来看待程序，而非程序员的“指令流”视角。</p>
+</blockquote>
+<p>指令的目的就是以一种特定的方式操纵存在于内存/缓存中的数据，引起数据的变化，其实这就是我们通常所说的“写程序”。只不过这是人类习惯的逻辑方式，在机器看来并不一定高效。</p>
+<p><img src="/images/skylake_microarchitecture/figure8_execution_engine_example.png" alt="Figure8 execution_engine_example"></p>
+<p>在上图例子中，需要执行左上角的六个计算指令。<code>In-order execution</code> 是假设完全按照程序顺序执行这六个指令的耗时。下面的<code>In-order(superscalar3)</code> 是合并了一些可以并行执行的指令的耗时。</p>
+<p>因为指令(2)中的 <code>r1</code> 要依赖指令(1)的结果，所以指令(2)只能等(1)执行结束再执行。而本来可以并行执行的(3)(4)也因为要保证 <code>In-order</code> 顺序而只能一同放在(1)之后执行。</p>
+<p>但从左下角的 <code>Data flow</code> 的角度来看，其实我们并不需要按照指令顺序运行程序：指令(2)完全可以放在后面执行，并重新安排并行计算顺序。这样就又节省了执行所需的时间。</p>
+<p>OOO选择可执行指令的依据是：</p>
+<ul>
+<li>不依赖未执行指令操纵的数据</li>
+<li>有可用的执行资源</li>
+</ul>
+<p>为了尽可能让进入后端的指令满足这两个条件，OOO采用了一系列的组件和技术。在后面的章节中将会进行介绍。</p>
+<p><img src="/images/skylake_microarchitecture/figure9_out_of_order.png" alt="Figure9 out_of_order"></p>
+<p>上图是一个OOO的概念示意图。前端输出给后端的都是顺序指令流，后端在一个窗口范围中选择可以执行的指令进行乱序执行。这里面没有强调的是，最终指令退出(retire)的顺序仍是按照程序的顺序。</p>
+<h3 id="OOO-Once-More"><a href="#OOO-Once-More" class="headerlink" title="OOO Once More"></a>OOO Once More</h3><p>这里对 OOO(Out-Of-Order) 乱序执行再简单讲两句。深入乱序执行的难点不在于“不按指令顺序执行”，而是如何做到“按指令顺序退出”。</p>
+<p>这里面的关键是，所有执行过的指令都先被“缓存”起来，并不把执行之后的结果真正写到寄存器或者内存里。从用户角度看，这个指令其实并没有被“执行”，因为它没有引起任何数据方面的变化。等到它可以确定是需要被执行的指令，并且它前面的指令都已经把结果写入(commit)之后，它再去 <code>Commit</code>。这样从用户角度看来，程序就是按照指令顺序执行了。</p>
+<blockquote>
+<p>在很多文档里，<code>Commit</code> 和 <code>Retire</code> 是两个可以互换(interchangable)的词。</p>
+</blockquote>
+<p>说实话，研究这块东西，最烦的就是同一个概念有N个名字。</p>
+<p><img src="/images/skylake_microarchitecture/figure10_out_of_order_once_more.png" alt="Figure10 out_of_order_once_more"></p>
+<p>再来总结一下 <code>OOO</code> 的 <code>Big Picture</code> :</p>
+<ul>
+<li>左边 <code>Fetch&amp;Decode</code> 是之前讲的前端（Front-End）相关的内容。此时指令还是有序的。</li>
+<li><code>Decode</code> 成微指令(μop)之后，这些微指令进入一个指令池（Instruction Pool），这里面能够被执行的指令，就直接被执行。“能够被执行”是指满足以下两个条件：<ul>
+<li>已有指令需要的数据</li>
+<li>执行单元有空闲</li>
+</ul>
+</li>
+<li>当指令被执行之后<ul>
+<li>通知所有对该指令有依赖的指令（们），它们所需要的数据已经准备好。</li>
+<li>注意这里说的是“执行”，不是上面说的 “Retire” 或 “Commit”</li>
+<li>为实现这一功能，CPU 中还必须要对微指令的操作数（数据）有 Bookkeeping 的能力</li>
+</ul>
+</li>
+<li>Commit 指令<ul>
+<li>只有当前指令的前序（指令顺序）指令都 Commit 之后，才能 Commit 当前指令</li>
+<li>Commit 也可以并行进行，前提是满足上面一条的条件，同时并行 Commit 的指令间没有依赖</li>
+</ul>
+</li>
+</ul>
+<h3 id="False-Dependency"><a href="#False-Dependency" class="headerlink" title="False Dependency"></a>False Dependency</h3><p>乱序执行的一大前置条件就是指令数据间没有相互依赖。下面就着重分析一下依赖。</p>
+<p>用下面的指令过程作一个示例：</p>
+<p><img src="/images/skylake_microarchitecture/figure11_out_of_order_false_dependency.png" alt="Figure11 out_of_order_false_dependency"></p>
+<p>简单分析一下：</p>
+<ul>
+<li>Read After Write(RAW) 型依赖<br>  (2)指令需要读取r1的值，而r1的值需要(1)指令执行之后给出。所以(2)指令对(1)指令有 RAW 依赖。RAW 依赖也被称作 <code>true dependency</code> 或者 <code>flow dependency</code>。</li>
+<li>Write After Read(WAR) 型依赖<br>  (3)指令需要更新 <code>r8</code> 的值，但在此之前(2)指令需要读取 <code>r8</code> 的值参与计算。所以(3)指令对(2)指令有 WAR 依赖。WAR 依赖也被称作 <code>anti-dependencies</code>。</li>
+<li>Write After Write(WAW) 型依赖<br>  (4)指令需要在(2)指令写入 <code>r3</code> 之后再写入 <code>r3</code>。所以(4)指令对(2)指令有 WAW 依赖。WAW 依赖也可以被叫做 <code>output dependencies</code></li>
+</ul>
+<p>按照以上的分析，这几条指令几乎没有可以并行执行的余地。不过，我想你也已经看出了一些“转机”：针对WAR和WAW，是可以被Register Rename这种方法破解的。这两种依赖都被称为 <code>false dependency</code>。</p>
+<h3 id="Register-Rename"><a href="#Register-Rename" class="headerlink" title="Register Rename"></a>Register Rename</h3><p>当需要写入 <code>r1</code> 的指令在读取 <code>r1</code> 的指令之后，写入的 <code>r1</code> 的新值可以首先保存在另外一个寄存器 <code>r1’</code>里。读取 <code>r1</code> 的指令仍然读取原 <code>r1</code> 寄存器中的值，这样WAR 指令就可以并行执行。当所有需要读取 <code>r1</code> 原值的指令都执行完毕，<code>r1</code> 就可以用新值代替。</p>
+<blockquote>
+<p>Register Rename其实就是利用CPU提供的大量的物理寄存器，为寄存器制作“分身”或者，Alias，提供能够增加程序并行性的便利。</p>
+</blockquote>
+<p>上面的例子里，<code>r1</code> 是 <code>architectural register</code>，<code>r1’</code> 是内部的 <code>physical register</code>。Rigster Rename 就是在制作这两种寄存器间的映射关系。当然，这一切对用户来说都是透明的。</p>
+<p>如前所述，<code>physical register</code> 的数量远多于 <code>architectural register</code> 的数量。其实 <code>architectural register</code> 仅仅是一个“代号”，并不是真正存放数据的位置。用这种方式，可以消除 <code>WAW</code> 和 <code>WAR</code> 这两种数据依赖进而增加程序整体的并行性。</p>
+<p>那么到底怎么操作呢？其实本质上也就是建立一个“映射表”，一个从“代号”到存储位置的映射表。</p>
+<p>E.g.</p>
+<p>现有5个 <code>architectural register</code> 寄存器：r1, r2, r3, r4, r5；9个 <code>physical register</code> 寄存器：p1, p2, …, p9。</p>
+<p>指令：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Add r1, r2, r3 ;r1 &#x3D; r2 + r3</span><br><span class="line">Sub r2, r1, r2 ;r2 &#x3D; r1 - r2</span><br><span class="line">Add  r1, r4, r5 ;r1 &#x3D; r4 + r5</span><br></pre></td></tr></table></figure>
+
+<p>最开始是一个简单的映射关系：</p>
+<table>
+<thead>
+<tr>
+<th align="left">r1</th>
+<th align="left">r2</th>
+<th align="left">r3</th>
+<th align="left">r4</th>
+<th align="left">r5</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">p1</td>
+<td align="left">p2</td>
+<td align="left">p3</td>
+<td align="left">p4</td>
+<td align="left">p5</td>
+</tr>
+</tbody></table>
+<p>在这张表里面还有一个 <code>FreeList</code>，用来保存还没有被占用的 <code>physical register</code>。</p>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left"></th>
+<th align="left"></th>
+<th align="left"></th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">p6</td>
+<td align="left">p7</td>
+<td align="left">p8</td>
+<td align="left">p9</td>
+</tr>
+</tbody></table>
+<p>OK，首先考虑不使用 <code>Register Rename</code> 的情景。第二条指令是必须等待第一条指令执行完成之后才能执行，因为 <code>r1</code> 有 <code>RAW</code> 型依赖。这个其实 <code>Register Rename</code> 也没有办法。但是第三条指令也不能在第二条指令之前执行，因为写入 <code>r1</code> 可能会影响第二条指令的结果（r2）。</p>
+<p>为了增加指令的并行性，让第三条指令能与第一条指令并行，同时消除 <code>WAW</code> 和 <code>WAR</code> 型依赖，看一下 <code>Register Rename</code> 是怎么做的。</p>
+<p>第一条指令就用原始对应的寄存器，此时还没有 <code>Register Rename</code>。对应的“映射表”<code>Rename Table</code>如下：</p>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left"></th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">r1</td>
+<td align="left">p1</td>
+</tr>
+<tr>
+<td align="left">r2</td>
+<td align="left">p2</td>
+</tr>
+<tr>
+<td align="left">r3</td>
+<td align="left">p3</td>
+</tr>
+<tr>
+<td align="left">r4</td>
+<td align="left">p4</td>
+</tr>
+<tr>
+<td align="left">r5</td>
+<td align="left">p5</td>
+</tr>
+</tbody></table>
+<p>第二条指令中，<code>r2</code> 针对第一条指令有 <code>WAR</code> 型依赖，可以将写入 <code>r2</code> 的结果放在另外一个寄存器里。从 <code>FreeList</code> 中选取下一个空闲的 <code>physical register</code>，即 <code>p6</code>。</p>
+<p>所以这条指令实际上就变成了<code>Sub r6, r1, r2; r6 = r1 - r2</code>。</p>
+<p><code>Rename Table</code>如下：</p>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left"></th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">r1</td>
+<td align="left">p1</td>
+</tr>
+<tr>
+<td align="left">r2</td>
+<td align="left"><strong>p6</strong></td>
+</tr>
+<tr>
+<td align="left">r3</td>
+<td align="left">p3</td>
+</tr>
+<tr>
+<td align="left">r4</td>
+<td align="left">p4</td>
+</tr>
+<tr>
+<td align="left">r5</td>
+<td align="left">p5</td>
+</tr>
+</tbody></table>
+<p>即告之后续指令 <code>r2</code> 最终的结果保存在 <code>p6</code> 里面。</p>
+<p>第三条指令，<code>r1 </code>针对第一条指令有 <code>WAW</code> 型依赖，可以将写入 <code>r1</code> 的结果放到另外一个寄存器里。从 <code>FreeList</code> 中选取下一个空闲的 <code>physical register</code>，即 <code>p7</code>。</p>
+<p>所以这条指令实际上就变成了 <code>Add p7, p4, p5 ; p7 = p4 + p5</code></p>
+<p><code>Rename Table</code> 如下：</p>
+<table>
+<thead>
+<tr>
+<th align="left"></th>
+<th align="left"></th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">r1</td>
+<td align="left"><strong>p7</strong></td>
+</tr>
+<tr>
+<td align="left">r2</td>
+<td align="left">p6</td>
+</tr>
+<tr>
+<td align="left">r3</td>
+<td align="left">p3</td>
+</tr>
+<tr>
+<td align="left">r4</td>
+<td align="left">p4</td>
+</tr>
+<tr>
+<td align="left">r5</td>
+<td align="left">p5</td>
+</tr>
+</tbody></table>
+<p>即告之 <code>r1</code> 最终的结果保存在 <code>p7</code> 里面。</p>
+<blockquote>
+<p>所有指令对 <code>architectural register</code>的读取都先通过 <code>Rename Table</code> 获得确切地址。</p>
+</blockquote>
+<p>回到最初提到的问题，因为第一条指令和第三条指令实际写入的寄存器（分别是p1和p7）并不冲突，且第二条指令仅在 <code>p1</code> 中读取数据，因此这两条指令可以并行执行。</p>
+<p>现代CPU的 <code>Rename Table </code>一般是在 <code>ROB</code> 里的 <code>RAT(Rename Alias Table)</code>。同时 <code>physical register</code> 也会被 <code>ROB entry</code> 取代。</p>
+<p>其实现在对 <code>Register Rename </code>的理解更多的是建立一个概念，在整个微架构中，这一步不是一个孤立的组件，所有组件之间都需要紧密配合。</p>
+<p>后续会对后端的执行进行示例介绍。</p>
+<h4 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h4><p>一个示例介绍Reorder Buffer(ROB)和Register Alias Table(RAT)和Reservation Station(RS)</p>
+<p>理解乱序执行（Out-of-Order）的核心其实就是把ROB，RAT和RS这三个组件搞透。</p>
+<p>如果要单独讲，很容易成为一大锅概念和专有名词的杂烩。所以这次把这几个紧密相关的组件放到一起，先用例子说明，仅描述自然行为，同时也避免出现太多概念。</p>
+<p><img src="/images/skylake_microarchitecture/figure12_AW0jkn.png" alt="Figure12 AW0jkn"></p>
+<p>上图是在一个起始时刻 <code>CYCLE 0</code> 时CPU后端各组件的状态。它即将执行 <code>Instructions</code> 表格里的6条指令。不同种类指令所需要消耗的执行时间如 <code>Cycle Consumption</code> 所示。</p>
+<p><code>ARF</code> 是 <code>Architectural Register File</code>，里面保存有当前时刻 <code>architectural register</code> 中的值；<code>RAT</code> 就是前面介绍过的 <code>Register Alias Table</code>，主要用作对 <code>architectural register</code> 的Rename。</p>
+<p><code>Reservation Station(RS)</code> 根据所连接的执行不同类型指令的Port而分成两类，一类保存 <code>ADD/SUB</code> 相关的指令，一类保存 <code>MUL/DIV</code> 相关的指令。里面的指令在两个Value都 <code>Ready</code> 的时候将发送到执行单元执行。</p>
+<p><code>Re Order Buffer</code> 旁边的表格是这6条指令从 <code>Issue</code> 到 <code>Execute</code>,  <code>Write</code> 最后再到 <code>Commit</code> 这几个状态的 <code>cycle</code> 时刻表。</p>
+<p>OK，那么下面进入第一个cycle。</p>
+<p><img src="/images/skylake_microarchitecture/figure13_AW0HOg.png" alt="Figure13 AW0HOg"></p>
+<p>第一条指令 <code>DIV R2, R3, R4</code> 按照先进先出的原则首先进入 <code>ROB1</code>。</p>
+<p>在ROB中，<code>Dst</code> 填该指令的目的 <code>architectural register</code>，也就是 R2；<code>Value</code> 是该指令执行完计算出来的结果，显然现在还不得而知，表示是否执行完的<code>Done</code> 标志位也是N的状态。</p>
+<p>同时针对 <code>DIV</code> 指令的RS中也有空闲资源，因此该指令也会在同一cycle进入RS。目的 tag<code>D-tag</code> 填写指令对应的 <code>ROB</code> 条目(ROB1)；<code>Tag1</code> 和 <code>Tag2</code> 通过查阅 <code>RAT</code> 中 <code>R3</code> 和 <code>R4</code> 的状态，如果有 Rename 的情况，则填写对应的 ROB 条目，如果没有，则直接读取 <code>ARF</code> 中的值，作为 <code>Value</code> 填入。</p>
+<p>因此，<code>D-tag</code> 是 <code>ROB1</code>，<code>Tag1</code> 和 <code>Tag2</code> 因为 <code>R3</code> 和 <code>R4</code> 没有 Rename 所以不填，直接读取 <code>ARF</code> 中的值，20 和 5，放入 <code>Value1</code> 和 <code>Value2</code> 中。</p>
+<p>之后，在 <code>RAT</code> 中，R2 被 Rename 成了 <code>ROB1</code>，即表示后续指令欲读取 R2 的值的话，都应该去读取 <code>ROB1</code> 中 <code>value</code> 的值。</p>
+<p>此时该 <code>DIV</code> 指令所需要的操作数都已经 <code>Ready</code>，那么就可以在下一个 cycle 时从 RS 中 <code>发射</code> 到执行单元去执行。</p>
+<p>下面进入第二个 cycle。</p>
+<p><img src="/images/skylake_microarchitecture/figure14_AW0qmQ.png" alt="Figure14 AW0qmQ"></p>
+<p>在第二个 cycle 中，第一条 <code>DIV</code> 指令开始执行，根据 <code>DIV</code> 的执行周期，那么我们知道它将在第 <code>2 + 10 = 12</code> 个 cycle 中执行完成。同时 ROB 中还有空闲，我们可以 <code>issue</code> 第二条 <code>MUL</code> 指令。</p>
+<p>在 RS 中，上一条 <code>DIV</code> 指令已经清出，也有空闲资源，所以 <code>MUL</code> 指令也可以进入到 RS 中。另外几个选项也如 <code>DIV</code> 指令的判断方式，因此 <code>D-tag</code> 为 <code>ROB2</code>，两个 <code>value</code> 为 4 和 2。此时 <code>MUL</code> 指令也已经 <code>Ready</code>，可以在下一 个cycle 开始执行。</p>
+<p>同时 <code>RAT</code> 中将 <code>R1</code> rename 到 <code>ROB2</code>。因为后续最新的 <code>R1</code> 的值将等于 <code>ROB2</code> 中的 <code>value</code>。</p>
+<p><img src="/images/skylake_microarchitecture/figure15_AW0Lwj.png" alt="Figure15 AW0Lwj"></p>
+<p>在第三个 cycle 中，<code>MUL</code> 指令开始执行，根据 <code>MUL</code> 的执行周期，它将在第 <code>3 + 3 = 6</code> 个 cycle 中执行完成。因 ROB 中还有空闲，此时可以 <code>issue</code> 第三条 <code>ADD</code> 指令。</p>
+<p>RS 里面，<code>ADD</code> 指令需要放到存放 <code>ADD/SUB</code> 指令的 RS 中，除此之外，各字段的填写方式与之前的指令没有区别。<code>R7</code> 和 <code>R8</code> 也可以直接从 <code>ARF</code> 中获取数值，因此该 <code>ADD</code> 指令也已经 <code>Ready</code>，可以在下一个 cycle 开始执行。</p>
+<p>之后，<code>RAT</code> 中将 <code>R3</code> rename 到 <code>ROB3</code>。</p>
+<p><img src="/images/skylake_microarchitecture/figure16_AW076S.png" alt="Figure16 AW076S"></p>
+<p>那么在第四个 cycle 中，第四条 <code>MUL</code> 指令可以进入 <code>ROB</code> 和 <code>RS</code> 之中。在 RS 中，<code>D-tag</code> 填入该指令对应的 <code>ROB</code> 条目，即 <code>ROB4</code>。而它的第一个操作数 <code>R1</code> 通过<code>RAT</code> 读取（参见 cycle 3 中的 <code>RAT</code> 情况。），rename 到了 <code>ROB2</code>，因此 <code>tag1</code> 需要填 <code>ROB2</code>。<code>Tag2</code> 同理，填 <code>ROB1</code>。</p>
+<p>之后，<code>RAT</code> 中的 <code>R1</code> 需要 rename 到 <code>ROB4</code>，以保持最新的状态。</p>
+<p>RS 中，因为该条指令两个操作数的 <code>value</code> 还没有 Ready，不能在下一个 cycle 开始执行，因此还暂存在 RS 之中。</p>
+<p><img src="/images/skylake_microarchitecture/figure17_AW0OTs.png" alt="Figure17 AW0OTs"></p>
+<p>在第五个 cycle 中，拆成两个阶段来看。第一个阶段，也即 <code>cycle 5&#39;</code>，第五条 <code>SUB</code> 指令进入 <code>ROB</code> 和 <code>RS</code>，各字段的填写方式与之前相同。</p>
+<p><img src="/images/skylake_microarchitecture/figure18_AW0vYq.png" alt="Figure18 AW0vYq"></p>
+<p>在 cycle 5 的第二个阶段中，注意到指令时刻表中，第三条在指令将在 cycle 5 完成执行，并进入 <code>Write</code> 阶段。</p>
+<p>于是此时第三条指令在 <code>ROB</code> 中对应的 <code>ROB3</code> 的 <code>Value</code> 中将填入该指令执行的结果，也就是 3，同时设置标志位 <code>DONE</code> 为 Y。</p>
+<p>在执行完成之后，在同一个 cycle 中，CPU 还将进行一个操作，就是将该结果广播给 RS 中现存的指令，如果有等待 <code>ROB3</code> 执行结果的指令，将接收该结果并更新状态。</p>
+<p>在当前 <code>RS(Adder)</code> 中，<code>SUB</code> 指令正在等待 <code>ROB3</code> 的结果（参见<code>cycle5&#39;</code>），于是其不再等待 <code>Tag1</code>，并在 <code>Value1</code> 中填入结果 3。此时该 <code>SUB</code> 指令也已经 Ready，并将在下一个 cycle 中执行，根据其执行开销，将在第 <code>6 + 1 = 7</code> cycle 时执行完成。</p>
+<p><img src="/images/skylake_microarchitecture/figure19_AW0xf0.png" alt="Figure19 AW0xf0"></p>
+<p>第六个 cycle 仍然分为两个阶段。第一个阶段 <code>cycle 6’</code> 里，第六条 <code>ADD</code> 指令指令可以进入 ROB 以及 RS。</p>
+<p>在 RS 中，<code>D-tag</code> 填写该指令所在的 ROB 条目 <code>ROB6</code>，两个操作数通过读取 <code>RAT</code> 获得，<code>R4</code> 和 <code>R2</code> 对应的分别是 <code>ROB5</code> 和 <code>ROB1</code>。</p>
+<p><code>RAT</code> 中 <code>R1</code> 所对应的最新值修改为 <code>ROB6</code>。</p>
+<p><img src="/images/skylake_microarchitecture/figure20_AWBCXF.png" alt="Figure20 AWBCXF"></p>
+<p>在第二个阶段，注意到此时第二条指令也在 <code>cycle 6</code> 执行完毕，因此它将执行的结果(8)写入到其所在的 ROB 条目 <code>ROB2</code>，并在同时将执行的结果广播给 RS 中的指令。</p>
+<p>此时 RS 中的 <code>MUL</code> 指令正在等待 <code>ROB2</code> 的值，此时将其对应的 <code>Value1</code> 中写入计算的结果(8)。</p>
+<p><img src="/images/skylake_microarchitecture/figure21_AWBplT.png" alt="Figure21 AWBplT"></p>
+<p>在第七个周期，注意到第五条指令也该执行完成，其所执行所得到的结果(-1)，也需要写回到 <code>ROB5</code> 并广播给 RS 中的指令。但此时没有等待该值的指令。所以对其他状态暂时没有影响。</p>
+<p>但如果此时有新的指令需要 <code>R4</code>，<code>ROB5</code> 此时的值可以直接传递给该指令。</p>
+<p><img src="/images/skylake_microarchitecture/figure22_AWBSpV.png" alt="Figure22 AWBSpV"></p>
+<p>在第 7 个指令之后，CPU 进入一个尴尬的时期。没有新的指令执行完毕，RS 中的指令也没有 <code>Ready</code> 的，观察一下时刻表，下一个时刻有新的指令执行完毕是 <code>cycle 12</code> 的事。</p>
+<p>在 <code>cycle 12</code> 中第一条 <code>DIV</code> 指令执行完毕，结果写入 <code>ROB1</code>，广播结果给 RS 中的指令，正好两个都需要 <code>ROB1</code>，并且拿到这个结果之后都进入 <code>Ready</code> 状态，可以在下一个 cycle 执行。</p>
+<p>更新一下第四条和第六条指令的时刻表，执行都是在第13个 cycle，完成将分别在第 16 和 14 个cycle。</p>
+<p>此时还发生了一件事，就是 ROB 中的第一条指令的 <code>DONE</code> 标志位标成了 <code>Y</code>。ROB 之前我们介绍是一个先入先出的 FIFO 结构，只有第一条指令完成之后，才能按顺序开始 commit。</p>
+<p><img src="/images/skylake_microarchitecture/figure23_AWB96U.png" alt="Figure23 AWB96U"></p>
+<p>所以在 <code>cycle 13</code>，第一条指令历史性的 commit 了。Commit 的意思就是把结果写入到 <code>ARF</code>，因此 <code>R2</code> 在 ARF 中改为了4。同时删除该 ROB 条目，为后续的指令腾出资源。当然 <code>RAT</code> 中也不再需要 rename 到 <code>ROB1</code>，最新的值已经在 <code>ARF</code> 中。</p>
+<p><img src="/images/skylake_microarchitecture/figure24_AWBim4.png" alt="Figure24 AWBim4"></p>
+<p>在 <code>cycle 14</code> 中，ROB 中的当前在队列头部的指令，也就是第二条指令也可以 commit 了，按之前的操作，<code>R1 </code>的值也改成了最新的值(8)。</p>
+<p>同时，第六条指令也执行完毕，计算的结果写入 <code>ROB6</code>。当然这条指令还不能 commit，因为 commit 需要按指令顺序。</p>
+<p><img src="/images/skylake_microarchitecture/figure25_AWBF0J.png" alt="Figure25 AWBF0J"></p>
+<p>第15个cycle，除了commit第三条指令之外没什么好做的。和以前的操作类似。</p>
+<p><img src="/images/skylake_microarchitecture/figure26_AWBVt1.png" alt="Figure26 AWBVt1"></p>
+<p>第 16 个指令，第 4 条指令执行完毕，结果写入 <code>ROB4</code>，同时它也是当前 ROB 中在队列头部的指令，可以在下一个 cycle commit。</p>
+<p><img src="/images/skylake_microarchitecture/figure27_AWBEkR.png" alt="Figure27 AWBEkR"></p>
+<p>那就commit呗。</p>
+<p><img src="/images/skylake_microarchitecture/figure28_AWBk79.png" alt="Figure28 AWBk79"></p>
+<p>剩下的第 18,19 cycle 想必你也知道该干什么了：把最后的两条指令 commit 掉。</p>
+<p><img src="/images/skylake_microarchitecture/figure29_AWBZfx.png" alt="Figure29 AWBZfx"></p>
+<p>OK，当指令时刻表都完成之后，这6条指令正式执行完毕</p>
+<h4 id="关于这几个组件"><a href="#关于这几个组件" class="headerlink" title="关于这几个组件"></a>关于这几个组件</h4><p>全部目的都在于通过一个示例解释 <code>RAT</code>,  <code>ROB</code> 和 <code>RS</code> 这三个组件的组成、特性和功能。在熟悉了这个例子的基础上可以再去寻找那些传统的“教科书”去印证理解那些大段大段的文字描述。</p>
+<p>这个例子其实还缺少一些类似分支转跳，尤其是分支预测失败之后如何操作的说明。但足矣描述清楚 CPU 的乱序执行和顺序 commit 到底是怎么回事。</p>
+<p>关于 CPU 微架构，前端和后端的内容基本上介绍的差不多了，后面会开始最后一个部分，也就是内存操作相关的组件的介绍。</p>
+<h2 id="Load-and-Store"><a href="#Load-and-Store" class="headerlink" title="Load and Store"></a>Load and Store</h2><p>这一章节我们讲一下 <code>load</code> 和 <code>store</code> 。</p>
+<p>尽管我们将指令<code>load</code>和<code>store</code>指令归类为其他类别的指令中的特殊指令，但所有指令和管道的设计都具有统一的目的：通过消除依赖关系来提高指令级别的并行度(parellarmise)。换句话说</p>
+<ol>
+<li>通过 <code>branch prediction</code> 来消除控制依赖性</li>
+<li>通过 <code>register renaming</code> 来消除 <code>false dependencies</code></li>
+</ol>
+<blockquote>
+<p>需要注意的是 <code>register renaming</code> 是针对寄存器的，而不是针对主存的。</p>
+</blockquote>
+<p>主存操作是否也存在依赖关系，如果有我们应当如何解决？</p>
+<h3 id="read-write-与-load-store-的不同"><a href="#read-write-与-load-store-的不同" class="headerlink" title="read/write 与 load/store 的不同"></a>read/write 与 load/store 的不同</h3><p><code>load</code> 和 <code>store</code> 是内存操作的两个指令，而 <code>read</code> 和 <code>write</code> 是直接操作内存的动作。在大多数情况下，这两个属术语可以互换，但是在下面的语境中，为了不对他们的含义产生误解，我们使用以下定义来区分：</p>
+<ol>
+<li><code>store</code> 是内存操作指令，只有在 <code>store</code> 指令提交后，才会发生内存写入</li>
+<li><code>load</code> 也是内存操作指令，但是 <code>load</code> 指令提交前后，都有可能发生内存读取。原因是 <code>load</code> 指令能够利用之前存储到 <code>load</code> 指令相同地址的结果。</li>
+</ol>
+<h3 id="寄存器与主存"><a href="#寄存器与主存" class="headerlink" title="寄存器与主存"></a>寄存器与主存</h3><p>寄存器和内存共享相同类型的依赖关系。可以在乱序执行期间消除错 <code>false dependencies</code> 关系。</p>
+<p>不同的是，内存操作只有在运行时才可以知道操作地址，这就使得判断依赖性变得更加复杂。例如</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Load r3 = 0[R6]</span><br><span class="line">Add r7 = r3 + r9</span><br><span class="line">Store r4 -&gt; 0[r7]</span><br><span class="line">Sub r1 = r1 - r2</span><br><span class="line">Load r8 = 0[r1]</span><br></pre></td></tr></table></figure>
+
+<p>在第三条指令中，将 <code>r4</code> 的值存储到 <code>r7</code> 记录的内存地址，然后第五条指令，从 <code>r1</code> 记录的内存地址中读取数据。我们假设缓存没有命中，如果 <code>r7</code> 的值与 <code>r1</code> 的值不同，没有任何问题；但如果 <code>r7 == r1</code> ，就会出现问题。尚未提交的第三条指令会让第五条指令读取的值不正确。换句话说这是 <code>RAW true dependencies</code>。</p>
+<p>导致这种局面的真正原因是 <code>memory aliasing</code>，当两个指针指向同一个内存地址时，<code>true dependency</code> 就会发生。</p>
+<h3 id="load-与-store-示例"><a href="#load-与-store-示例" class="headerlink" title="load 与 store 示例"></a><code>load</code> 与 <code>store</code> 示例</h3><p>假设初始条件如下</p>
+<p><img src="/images/skylake_microarchitecture/figure30_ELdlTO.png" alt="Figure30 ELdlTO"></p>
+<p>最开始，几个 <code>load</code> 指令和 <code>store</code> 指令被传输到 <code>Load-Store Queue (LSQ)</code> ，有 4 个 <code>address-value</code> 键值对在缓存中。</p>
+<p><img src="/images/skylake_microarchitecture/figure31_ELdQ0K.png" alt="Figure31 ELdQ0K"></p>
+<p>开始从 <code>LSQ</code> 中执行第一条指令：<code>load from addr 0x3290</code>。</p>
+<p>首先检查先前是否有 <code>store</code> 指令将值存储在同一地址。由于这是第一条指令，前面没有任何 <code>store</code> 指令。</p>
+<p>然后，在缓存中查找匹配项。在我们假设的场景中，会命中缓存，并将 <code>42</code> 传递到 <code>LSQ</code> 中 <code>Value</code> 的位置。</p>
+<p><img src="/images/skylake_microarchitecture/figure32_ELdMm6.png" alt="Figure32 ELdMm6"></p>
+<p>继续执行下一条 <code>store</code> 指令，假定 <code>store</code> 计算出来的值为 <code>25</code>，并将其存储到 <code>LSQ</code> 的 <code>Value</code> 列中。</p>
+<blockquote>
+<p>因为只有提交时，才会写入到主存中</p>
+</blockquote>
+<p><img src="/images/skylake_microarchitecture/figure33_ELduOx.png" alt="Figure33 ELduOx"></p>
+<p>再下一条指令也类似，假设置为 <code>-17</code>。</p>
+<p><img src="/images/skylake_microarchitecture/figure34_ELdn61.png" alt="Figure34 ELdn61"></p>
+<p>下一条 <code>load</code> 指令，依然会首先检查前面是否有 <code>store</code> 指令写入到相同的位置，发现没有，然后从 <code>Cache</code> 中将响应地址的值传递到 <code>LSQ</code> 的 <code>Value</code> 中。</p>
+<p><img src="/images/skylake_microarchitecture/figure35_ELd8te.png" alt="Figure35 ELd8te"></p>
+<p>再下一条 <code>load</code> 指令，可以找到之前 <code>store</code> 指令存储到了相同的地址，于是直接将 <code>store</code> 的值读取到 <code>Value</code> 中。这是一个 <code>store-forward</code> 操作。</p>
+<p><img src="/images/skylake_microarchitecture/figure36_ELdYpd.png" alt="Figure36 ELdYpd"></p>
+<p>下一条 <code>load</code> 指令会从 <code>Cache</code> 中读取值 <code>1</code> ，并放入 <code>LSQ</code> 中。</p>
+<p><img src="/images/skylake_microarchitecture/figure37_ELd3kD.png" alt="Figure37 ELd3kD"></p>
+<p>接下来 <code>store</code> 指令，假设计算值为 <code>0</code> 并放入 <code>LSQ</code> 中。</p>
+<p><img src="/images/skylake_microarchitecture/figure38_ELdGfH.png" alt="Figure38 ELdGfH"></p>
+<p>接下来 <code>load</code> 指令，继续通过 <code>store-forward</code> 操作，将 <code>25</code> 放入 <code>Value</code> 中。</p>
+<p><img src="/images/skylake_microarchitecture/figure39_EOa09H.png" alt="Figure39 EOa09H"></p>
+<p>下一条 <code>load</code> 指令，会找到多个 <code>store</code> 有相同的地址，取最接近的一个，将 <code>0</code> 放入 <code>LSQ</code> 的 <code>Value</code> 中。</p>
+<p><img src="/images/skylake_microarchitecture/figure40_EOaB3d.png" alt="Figure40 EOaB3d"></p>
+<p>最后一条 <code>load</code> 指令，从 <code>Cache</code> 中将 <code>1</code> 放到 <code>LSQ</code> 中。</p>
+<p>然后，将提交指令。</p>
+<p><img src="/images/skylake_microarchitecture/figure41_EOdEPe.png" alt="Figure41 EOdEPe"></p>
+<p>对于 <code>load</code> 指令而言，它只是从 <code>LSQ</code> 出队，因为该值已在执行阶段加载到寄存器中。</p>
+<p><img src="/images/skylake_microarchitecture/figure42_EOdurt.png" alt="Figure42 EOdurt"></p>
+<p>对于<code>store</code>指令，将值更新到 <code>Cache</code> 中，然后出队。</p>
+<p><img src="/images/skylake_microarchitecture/figure43_EOdexA.png" alt="Figure43 EOdexA"></p>
+<p>下一条 <code>store</code> 指令，依然是更新到 <code>Cache</code> 中，然后出队。</p>
+<p><img src="/images/skylake_microarchitecture/figure44_EOdZ2d.png" alt="Figure44 EOdZ2d"></p>
+<p>接下来的三条 <code>load</code> 指令，出队。</p>
+<p><img src="/images/skylake_microarchitecture/figure45_EOdV8H.png" alt="Figure45 EOdV8H"></p>
+<p><code>store</code>，更新缓存，出队。</p>
+<p><img src="/images/skylake_microarchitecture/figure46_EOdnKI.png" alt="Figure46 EOdnKI"></p>
+<p>最后三条 <code>load</code> 指令，出队。</p>
+<p>之所以 <code>store</code> 仅在提交阶段更新缓存，是因为如果处理器在流水线中检测到预测失败，并且最后一条 <code>store</code> 指令之后的指令需要刷新，则缓存状态不会受到影响，并且如果正确预测时，可以认为从未收到影响。</p>
+<blockquote>
+<p>再次声明</p>
+<p>本文全部内容都来自于 DECODEZ “Skylake 微架构剖析” 系列，地址 <a target="_blank" rel="noopener" href="https://decodezp.github.io/2019/01/07/quickwords9-skylake-pipeline-1/">https://decodezp.github.io/2019/01/07/quickwords9-skylake-pipeline-1/</a></p>
+<p>搬运仅仅为了留作笔记，详细内容请直接访问 DECODEZ 的博客网站 <a target="_blank" rel="noopener" href="https://decodezp.github.io/">https://decodezp.github.io/</a></p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+        <div class="reward-container">
+  <div></div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/weixinpay.jpg" alt="Andrewei 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.jpg" alt="Andrewei 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>Andrewei
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://andrewei1316.github.io/2020/12/13/skylake-microarchitecture/" title="【转载】Skylake Microarchitecture">https://andrewei1316.github.io/2020/12/13/skylake-microarchitecture/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/cpu/" rel="tag"><i class="fa fa-tag"></i> cpu</a>
+              <a href="/tags/arch/" rel="tag"><i class="fa fa-tag"></i> arch</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/12/12/star-schema-benchmark/" rel="prev" title="《Star Schema Benchmark》阅读笔记">
+      <i class="fa fa-chevron-left"></i> 《Star Schema Benchmark》阅读笔记
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/12/20/top-down-performance-analysis/" rel="next" title="《A Top-Down Method for Performance Analysis and Counters Architecture》阅读笔记">
+      《A Top-Down Method for Performance Analysis and Counters Architecture》阅读笔记 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Skylake-%E4%BB%8B%E7%BB%8D"><span class="nav-number">2.</span> <span class="nav-text">Skylake 介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E6%B0%B4%E7%BA%BF%E6%A6%82%E8%A7%88"><span class="nav-number">3.</span> <span class="nav-text">流水线概览</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E7%AB%AF-Front-End"><span class="nav-number">3.1.</span> <span class="nav-text">前端(Front-End)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%90%8E%E7%AB%AF-Back-End"><span class="nav-number">3.2.</span> <span class="nav-text">后端(Back-End)</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E7%AB%AF-Frontend"><span class="nav-number">4.</span> <span class="nav-text">前端(Frontend)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Fetch"><span class="nav-number">4.1.</span> <span class="nav-text">Fetch</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E7%A0%81"><span class="nav-number">4.2.</span> <span class="nav-text">解码</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Fused-%CE%BCop"><span class="nav-number">4.2.1.</span> <span class="nav-text">Fused-μop</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MSROM"><span class="nav-number">4.2.2.</span> <span class="nav-text">MSROM</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Stack-Engine"><span class="nav-number">4.2.3.</span> <span class="nav-text">Stack Engine</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Decoded-Stream-Buffer-DSB"><span class="nav-number">4.2.4.</span> <span class="nav-text">Decoded Stream Buffer(DSB)</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%AB%E5%90%8D"><span class="nav-number">4.2.4.1.</span> <span class="nav-text">别名</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%BD%9C%E7%94%A8"><span class="nav-number">4.2.4.2.</span> <span class="nav-text">作用</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%8F%82%E6%95%B0"><span class="nav-number">4.2.4.3.</span> <span class="nav-text">参数</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%B8%8Eicache%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">4.2.4.4.</span> <span class="nav-text">与icache的关系</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%B8%8EMSROM%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">4.2.4.5.</span> <span class="nav-text">与MSROM的关系</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#MITE-Path%E5%92%8CDSB-Path"><span class="nav-number">4.2.5.</span> <span class="nav-text">MITE Path和DSB Path</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Instruction-Decode-Queue-IDQ"><span class="nav-number">4.2.6.</span> <span class="nav-text">Instruction Decode Queue(IDQ)</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Loop-Stream-Detector-LSD"><span class="nav-number">4.2.6.1.</span> <span class="nav-text">Loop Stream Detector(LSD)</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8E%E7%AB%AF-Backend"><span class="nav-number">5.</span> <span class="nav-text">后端 (Backend)</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Out-of-order-OOO-Execution-Engine"><span class="nav-number">5.1.</span> <span class="nav-text">Out-of-order(OOO)Execution&#x2F;Engine</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OOO-Once-More"><span class="nav-number">5.2.</span> <span class="nav-text">OOO Once More</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#False-Dependency"><span class="nav-number">5.3.</span> <span class="nav-text">False Dependency</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Register-Rename"><span class="nav-number">5.4.</span> <span class="nav-text">Register Rename</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A4%BA%E4%BE%8B"><span class="nav-number">5.4.1.</span> <span class="nav-text">示例</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B3%E4%BA%8E%E8%BF%99%E5%87%A0%E4%B8%AA%E7%BB%84%E4%BB%B6"><span class="nav-number">5.4.2.</span> <span class="nav-text">关于这几个组件</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Load-and-Store"><span class="nav-number">6.</span> <span class="nav-text">Load and Store</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#read-write-%E4%B8%8E-load-store-%E7%9A%84%E4%B8%8D%E5%90%8C"><span class="nav-number">6.1.</span> <span class="nav-text">read&#x2F;write 与 load&#x2F;store 的不同</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%84%E5%AD%98%E5%99%A8%E4%B8%8E%E4%B8%BB%E5%AD%98"><span class="nav-number">6.2.</span> <span class="nav-text">寄存器与主存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#load-%E4%B8%8E-store-%E7%A4%BA%E4%BE%8B"><span class="nav-number">6.3.</span> <span class="nav-text">load 与 store 示例</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Andrewei"
+      src="/images/header.jpg">
+  <p class="site-author-name" itemprop="name">Andrewei</p>
+  <div class="site-description" itemprop="description">There's no feat, but what we make.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">38</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">24</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">48</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/andrewei1316" title="GitHub → https://github.com/andrewei1316" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2015 – 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Andrewei</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/medium-zoom@1/dist/medium-zoom.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+  <script>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'c104fbea1a954f68954e',
+      clientSecret: 'b436df6cf1fa320ed8747515f6137aa6f88f7417',
+      repo        : 'andrewei1316.github.io',
+      owner       : 'Andrewei1316',
+      admin       : ['Andrewei1316'],
+      id          : '6fcabe024e3d27b026741853a6da66b8',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
